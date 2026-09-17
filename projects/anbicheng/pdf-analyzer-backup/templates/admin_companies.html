@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>公司管理 — PDF Analyzer AI</title>
+  <link rel="stylesheet" href="/static/style.css?v=3" />
+  <style>
+    /* ── 管理页专用样式（与 admin_users.html 统一） ── */
+    .admin-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 32px); }
+
+    .page-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .page-title { font-size: 22px; font-weight: 700; color: #1E293B; }
+    .page-sub { font-size: 13px; color: #64748B; margin-top: 4px; }
+
+    .btn-sm {
+      padding: 8px 16px; background: #2563EB; color: #fff; border: none;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-sm:hover { background: #1D4ED8; }
+    .btn-sm.outline {
+      background: #fff; color: #374151; border: 1.5px solid #E2E8F0;
+    }
+    .btn-sm.outline:hover { background: #F8FAFC; }
+    .btn-sm.danger { background: #EF4444; }
+    .btn-sm.danger:hover { background: #DC2626; }
+
+    /* ── 标签 ── */
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      border-bottom: 1.5px solid #E2E8F0; padding-bottom: 0;
+    }
+    .tab {
+      padding: 8px 16px; font-size: 13px; font-weight: 600; color: #64748B;
+      cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+      transition: color 0.15s, border-color 0.15s; text-decoration: none;
+    }
+    .tab:hover { color: #334155; }
+    .tab.active { color: #2563EB; border-bottom-color: #2563EB; }
+
+    /* ── 表格 ── */
+    .table-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: #F8FAFC; }
+    th {
+      padding: 11px 16px; text-align: left; font-weight: 600;
+      color: #64748B; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    td { padding: 12px 16px; color: #374151; border-top: 1px solid #F1F5F9; vertical-align: middle; }
+    tr:hover td { background: #F8FAFC; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-active { background: #DCFCE7; color: #16A34A; }
+    .badge-inactive { background: #F1F5F9; color: #94A3B8; }
+    .badge-plan { background: #EFF6FF; color: #2563EB; }
+
+    .quota-near-limit { color: #C2410C; font-weight: 600; }
+    .quota-exceeded   { color: #DC2626; font-weight: 700; }
+
+    .company-name { font-weight: 600; color: #0F172A; }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    /* ── 模态框 ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 100; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; padding: 32px;
+      width: 100%; max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      max-height: 92vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: #1E293B; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .form-helper { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+    .form-hint { font-size: 12px; color: #2563EB; margin-top: 6px; background: #EFF6FF; padding: 6px 10px; border-radius: 6px; display: none; }
+    .form-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      box-sizing: border-box;
+    }
+    .form-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    select.form-input { background: #fff; cursor: pointer; }
+
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+    .modal-error {
+      background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
+      padding: 9px 13px; font-size: 13px; color: #DC2626; margin-bottom: 14px;
+      display: none;
+    }
+
+    .loading-row td { text-align: center; padding: 32px; color: #94A3B8; }
+    .empty-row td { text-align: center; padding: 32px; color: #94A3B8; }
+
+    /* ── 提示 ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 200;
+      background: #1E293B; color: #fff; padding: 12px 18px; border-radius: 8px;
+      font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transform: translateY(20px); opacity: 0; pointer-events: none;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { background: #DC2626; }
+
+    .forbidden-msg {
+      max-width: 480px; margin: 80px auto; text-align: center;
+      background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 12px;
+      padding: 28px; color: #B91C1C; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航 -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#2563EB"/>
+          <path d="M9 8h10l4 4v12a2 2 0 01-2 2H9a2 2 0 01-2V10a2 2 0 012-2z" fill="white" opacity="0.9"/>
+          <path d="M19 8v4h4" fill="none" stroke="white" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="nav-title">PDF Analyzer</span>
+      <span style="margin-left:8px;font-size:12px;color:#94A3B8;font-weight:500;">管理界面</span>
+    </div>
+    <div class="nav-right">
+      <a href="/" style="font-size:13px;color:#64748B;text-decoration:none;margin-right:12px;">
+        &#8592; 返回主页
+      </a>
+      <div class="nav-avatar" id="nav-avatar" style="cursor:pointer" title="个人中心"></div>
+    </div>
+  </nav>
+
+  <div class="admin-container" id="main-container" style="display:none;">
+    <!-- 页头 -->
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">公司管理</h1>
+        <p class="page-sub">管理付费、配额及用户数</p>
+      </div>
+      <button class="btn-sm" id="btn-new-company">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        新建公司
+      </button>
+    </div>
+
+    <!-- 标签（用户管理页面入口） -->
+    <div class="tab-bar">
+      <a class="tab" href="/admin">用户列表</a>
+      <span class="tab active">公司列表</span>
+    </div>
+
+    <!-- 公司列表 -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>套餐</th>
+            <th>用户数</th>
+            <th>月度页数</th>
+            <th>合同开始日</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="companies-tbody">
+          <tr class="loading-row"><td colspan="7">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="forbidden-msg" id="forbidden-msg" style="display:none;">
+    没有权限。<br>
+    此页面仅限 super_admin 访问。
+  </div>
+
+  <!-- ── 公司创建/编辑 模态框 ── -->
+  <div class="modal-overlay" id="company-modal">
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title">新建公司</h2>
+      <div class="modal-error" id="modal-error"></div>
+
+      <div class="form-group">
+        <label class="form-label">名称</label>
+        <input type="text" class="form-input" id="m-name" placeholder="例：某某有限公司" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">套餐</label>
+        <select class="form-input" id="m-plan"></select>
+        <div class="form-hint" id="m-plan-hint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">最大用户数</label>
+        <input type="number" min="1" class="form-input" id="m-max-users" placeholder="留空则使用套餐默认值" />
+        <div class="form-helper">留空时将使用套餐默认值。</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">月度页数上限</label>
+        <input type="number" min="1" class="form-input" id="m-max-pages" placeholder="留空则使用套餐默认值" />
+        <div class="form-helper">留空时将使用套餐默认值。</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">合同开始日</label>
+        <input type="date" class="form-input" id="m-contract-start" />
+      </div>
+      <div class="form-group" id="m-active-group" style="display:none;">
+        <label class="form-label">状态</label>
+        <select class="form-input" id="m-active">
+          <option value="true">启用</option>
+          <option value="false">停用</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-sm outline" id="modal-cancel">取消</button>
+        <button class="btn-sm" id="modal-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── 认证检查 ──────────────────────────────────────────────────────────
+    var token = sessionStorage.getItem('access_token');
+    if (!token) { window.location.href = '/login'; }
+
+    function authHeaders() {
+      return { 'Authorization': 'Bearer ' + sessionStorage.getItem('access_token'), 'Content-Type': 'application/json' };
+    }
+
+    async function fetchWithAuth(url, options) {
+      options = Object.assign({}, options || {});
+      options.headers = Object.assign(
+        { 'Authorization': 'Bearer ' + sessionStorage.getItem('access_token') },
+        options.headers || {}
+      );
+      var resp = await fetch(url, options);
+      if (resp.status === 401) {
+        var refreshResp = await fetch('/auth/refresh', { method: 'POST' });
+        if (!refreshResp.ok) {
+          sessionStorage.removeItem('access_token');
+          window.location.href = '/login';
+          return resp;
+        }
+        var refreshData = await refreshResp.json();
+        sessionStorage.setItem('access_token', refreshData.access_token);
+        options.headers['Authorization'] = 'Bearer ' + refreshData.access_token;
+        resp = await fetch(url, options);
+      }
+      return resp;
+    }
+
+    function esc(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmtDate(dateStr) {
+      if (!dateStr) return '-';
+      return new Date(dateStr).toLocaleDateString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit' });
+    }
+
+    function showToast(msg, isError) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(function () { t.className = 'toast' + (isError ? ' error' : ''); }, 2400);
+    }
+
+    // ── 状态 ────────────────────────────────────────────────────────────────
+    var plansCache = [];          // [{plan, max_users, max_monthly_pages}, ...]
+    var companiesList = [];
+    var editingCompanyId = null;
+
+    // ── 初始化 ──────────────────────────────────────────────────────────────
+    async function initPage() {
+      var resp;
+      try {
+        resp = await fetchWithAuth('/auth/me');
+        if (!resp.ok) { window.location.href = '/login'; return; }
+        var me = await resp.json();
+        if (me.must_change_password) { window.location.href = '/change-password'; return; }
+        if (me.role !== 'super_admin' && me.role !== 'root_admin') {
+          document.getElementById('forbidden-msg').style.display = '';
+          return;
+        }
+      } catch (e) { window.location.href = '/login'; return; }
+
+      document.getElementById('main-container').style.display = '';
+
+      // 获取套餐列表并填充下拉框
+      try {
+        var pr = await fetchWithAuth('/api/admin/plans');
+        if (pr.ok) {
+          plansCache = await pr.json();
+          var sel = document.getElementById('m-plan');
+          sel.innerHTML = plansCache.map(function (p) {
+            return '<option value="' + esc(p.plan) + '">' + esc(p.plan) + '</option>';
+          }).join('');
+        }
+      } catch (e) { /* ignore */ }
+
+      loadCompanies();
+    }
+
+    // ── 列表加载 ──────────────────────────────────────────────────────────
+    async function loadCompanies() {
+      var tbody = document.getElementById('companies-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="7">加载中...</td></tr>';
+      try {
+        var resp = await fetchWithAuth('/api/admin/companies');
+        if (resp.status === 403) {
+          document.getElementById('main-container').style.display = 'none';
+          document.getElementById('forbidden-msg').style.display = '';
+          return;
+        }
+        if (!resp.ok) throw new Error('fetch failed');
+        companiesList = await resp.json();
+        renderCompanies();
+      } catch (e) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载错误。请刷新页面。</td></tr>';
+      }
+    }
+
+    function _usageCls(used, max) {
+      if (used >= max) return 'quota-exceeded';
+      if (max > 0 && used / max >= 0.8) return 'quota-near-limit';
+      return '';
+    }
+
+    function renderCompanies() {
+      var tbody = document.getElementById('companies-tbody');
+      if (!companiesList.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">尚未注册任何公司。</td></tr>';
+        return;
+      }
+      tbody.innerHTML = companiesList.map(function (c) {
+        var userCls = c.active_user_count >= c.max_users ? 'quota-exceeded' : '';
+        var pageCls = _usageCls(c.monthly_pages_used, c.max_monthly_pages);
+
+        var statusBadge = c.is_active
+          ? '<span class="badge badge-active">启用</span>'
+          : '<span class="badge badge-inactive">停用</span>';
+
+        return '<tr>' +
+          '<td><span class="company-name">' + esc(c.name) + '</span></td>' +
+          '<td><span class="badge badge-plan">' + esc(c.plan) + '</span></td>' +
+          '<td class="' + userCls + '">' + c.active_user_count + ' / ' + c.max_users + '</td>' +
+          '<td class="' + pageCls + '">' + c.monthly_pages_used + ' / ' + c.max_monthly_pages + '</td>' +
+          '<td>' + (c.contract_started_at ? fmtDate(c.contract_started_at) : '-') + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td><div class="action-btns">' +
+            '<button class="btn-sm outline" data-edit-id="' + c.id + '">編集</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+
+      // 批量绑定编辑按钮事件
+      tbody.querySelectorAll('button[data-edit-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          openEdit(parseInt(btn.getAttribute('data-edit-id'), 10));
+        });
+      });
+    }
+
+    // ── 套餐提示 ────────────────────────────────────────────────────
+    function updatePlanHint() {
+      var plan = document.getElementById('m-plan').value;
+      var def = plansCache.find(function (p) { return p.plan === plan; });
+      var hintEl = document.getElementById('m-plan-hint');
+      if (def) {
+        hintEl.textContent =
+          '套餐 ' + plan + ' 默认: max_users=' + def.max_users +
+          ', max_monthly_pages=' + def.max_monthly_pages;
+        hintEl.style.display = '';
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }
+    document.getElementById('m-plan').addEventListener('change', updatePlanHint);
+
+    // ── 模态框 ────────────────────────────────────────────────────────────
+    function _resetModal() {
+      document.getElementById('m-name').value = '';
+      document.getElementById('m-name').disabled = false;
+      document.getElementById('m-max-users').value = '';
+      document.getElementById('m-max-pages').value = '';
+      document.getElementById('m-contract-start').value = '';
+      document.getElementById('m-active').value = 'true';
+      document.getElementById('modal-error').style.display = 'none';
+      if (plansCache.length) {
+        document.getElementById('m-plan').value = plansCache[0].plan;
+        updatePlanHint();
+      }
+    }
+
+    function openCreate() {
+      editingCompanyId = null;
+      document.getElementById('modal-title').textContent = '新建公司';
+      _resetModal();
+      document.getElementById('m-active-group').style.display = 'none';
+      document.getElementById('company-modal').classList.add('open');
+    }
+
+    async function openEdit(companyId) {
+      editingCompanyId = companyId;
+      document.getElementById('modal-title').textContent = '编辑公司';
+      _resetModal();
+      document.getElementById('m-active-group').style.display = '';
+      document.getElementById('company-modal').classList.add('open');
+      try {
+        var resp = await fetchWithAuth('/api/admin/companies/' + companyId);
+        if (!resp.ok) throw new Error();
+        var c = await resp.json();
+        document.getElementById('m-name').value = c.name || '';
+        document.getElementById('m-plan').value = c.plan || (plansCache[0] && plansCache[0].plan) || 'basic';
+        document.getElementById('m-max-users').value = c.max_users != null ? c.max_users : '';
+        document.getElementById('m-max-pages').value = c.max_monthly_pages != null ? c.max_monthly_pages : '';
+        if (c.contract_started_at) {
+          document.getElementById('m-contract-start').value = c.contract_started_at.substring(0, 10);
+        } else {
+          document.getElementById('m-contract-start').value = '';
+        }
+        document.getElementById('m-active').value = c.is_active ? 'true' : 'false';
+        updatePlanHint();
+      } catch (e) {
+        document.getElementById('modal-error').textContent = '加载错误。请重试。';
+        document.getElementById('modal-error').style.display = 'block';
+      }
+    }
+
+    document.getElementById('btn-new-company').addEventListener('click', openCreate);
+    document.getElementById('modal-cancel').addEventListener('click', function () {
+      document.getElementById('company-modal').classList.remove('open');
+    });
+    document.getElementById('company-modal').addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+
+    // ── 保存 ────────────────────────────────────────────────────────────────
+    document.getElementById('modal-save').addEventListener('click', async function () {
+      var errEl = document.getElementById('modal-error');
+      errEl.style.display = 'none';
+
+      var name = document.getElementById('m-name').value.trim();
+      var plan = document.getElementById('m-plan').value;
+      var maxUsersRaw = document.getElementById('m-max-users').value.trim();
+      var maxPagesRaw = document.getElementById('m-max-pages').value.trim();
+      var contractRaw = document.getElementById('m-contract-start').value;
+      var isActive = document.getElementById('m-active').value === 'true';
+
+      if (!editingCompanyId && !name) {
+        errEl.textContent = '请输入名称。';
+        errEl.style.display = 'block'; return;
+      }
+
+      var payload = {};
+      if (name) payload.name = name;
+      if (plan) payload.plan = plan;
+      if (maxUsersRaw !== '') payload.max_users = parseInt(maxUsersRaw, 10);
+      if (maxPagesRaw !== '') payload.max_monthly_pages = parseInt(maxPagesRaw, 10);
+      if (contractRaw) {
+        // 以 ISO 8601 (UTC midnight) 格式发送
+        payload.contract_started_at = new Date(contractRaw + 'T00:00:00Z').toISOString();
+      }
+      if (editingCompanyId) {
+        payload.is_active = isActive;
+      }
+
+      try {
+        var resp;
+        if (!editingCompanyId) {
+          resp = await fetchWithAuth('/api/admin/companies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          resp = await fetchWithAuth('/api/admin/companies/' + editingCompanyId, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+        var data = await resp.json();
+        if (!resp.ok) {
+          errEl.textContent = data.detail || '发生错误。';
+          errEl.style.display = 'block';
+          return;
+        }
+        document.getElementById('company-modal').classList.remove('open');
+        showToast(editingCompanyId ? '公司已更新。' : '公司已创建。');
+        loadCompanies();
+      } catch (e) {
+        errEl.textContent = '网络错误。';
+        errEl.style.display = 'block';
+      }
+    });
+
+    // ── 导航 ────────────────────────────────────────────────────────────────
+    document.getElementById('nav-avatar').addEventListener('click', function () {
+      window.location.href = '/me';
+    });
+
+    // ── 启动 ────────────────────────────────────────────────────────────────
+    initPage();
+  </script>
+</body>
+</html>

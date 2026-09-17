@@ -1,0 +1,15 @@
+{
+  "excel_template_path": "data/templates/AD請求書テンプレート.xlsx",
+  "sheet_name": "ＡＤ請求書",
+  "fields": [
+    {"id": "date", "label": "発行日（例: 公元2026年3月28日）。日付のフォーマットはそのまま記載すること。", "cell": "I2"},
+    {"id": "recipient_name", "label": "宛名（請求先の名称、「宛」の左側に記載された名前）", "cell": "A4"},
+    {"id": "property_name", "label": "物件名（物件名の右側に記載された名称）", "cell": "C6"},
+    {"id": "room_number", "label": "号室（号室の右側に記載された部屋番号）", "cell": "C7"},
+    {"id": "contractor_name", "label": "ご契約者名（ご契約者名の右側に記載された氏名）", "cell": "C8"},
+    {"id": "contract_start_date", "label": "契約開始日（契約開始日の右側に記載された日付、例: 2026年4月1日）", "cell": "C9"},
+    {"id": "ad_fee", "label": "広告料（金額、数字のみ、円単位）。「上記、広告料として」の下に記載された金額。", "cell": "D12"},
+    {"id": "tax_amount", "label": "10%対象消費税額（数字のみ、円単位）。「内、10%対象消費税額」の右側に記載された金額。", "cell": "I13"},
+    {"id": "transaction_date", "label": "取引年月日（例: 2026年3月28日）。「取引年月日:」の右側に記載された日付。", "cell": "E16"}
+  ]
+}

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <title>PDF Analyzer - 精算書解析</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/style.css?v=6" />
+    <link rel="stylesheet" href="/static/review.css" />
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <button class="sidebar-toggle-btn" id="sidebar-toggle" title="メニュー" data-i18n-title="nav_menu_title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="nav-logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="#2563EB"/>
+                    <path d="M9 8h10l4 4v12a2 2 0 01-2 2H9a2 2 0 01-2V10a2 2 0 012-2z" fill="white" opacity="0.9"/>
+                    <path d="M19 8v4h4" fill="none" stroke="white" stroke-width="1.5"/>
+                    <rect x="10" y="15" width="8" height="1.5" rx="0.75" fill="#2563EB"/>
+                    <rect x="10" y="19" width="5" height="1.5" rx="0.75" fill="#2563EB"/>
+                </svg>
+            </div>
+            <span class="nav-title">PDF Analyzer</span>
+        </div>
+        <div class="nav-right">
+            <button class="lang-toggle-btn" id="lang-toggle" title="言語切替" data-i18n-title="nav_lang_title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                <span id="lang-label">中文</span>
+            </button>
+            <span id="nav-username" style="font-size:13px;color:#64748B;margin-right:4px;"></span>
+            <button class="nav-icon-btn" id="admin-btn" title="ユーザー管理" data-i18n-title="nav_admin_title" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </button>
+            <button class="nav-icon-btn" id="companies-btn" title="Company管理" data-i18n-title="nav_companies_title" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9h.01M9 13h.01M9 17h.01"/></svg>
+            </button>
+            <button class="nav-icon-btn" id="logout-btn" title="ログアウト" data-i18n-title="nav_logout_title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+            <div class="nav-avatar" id="nav-avatar" title="アカウント情報" data-i18n-title="nav_account_title"></div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-section-title" data-i18n="sidebar_menu">文書処理メニュー</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="sidebar-item" data-page="jusetsu">
+                <div class="sidebar-item-icon sidebar-icon-blue">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                </div>
+                <div class="sidebar-item-content">
+                    <span class="sidebar-item-title" data-i18n="sidebar_jusetsu">重要事項説明書</span>
+                    <span class="sidebar-item-desc" data-i18n="sidebar_jusetsu_desc">不動産重説の解析・Excel出力</span>
+                </div>
+                <div class="sidebar-item-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            <a href="/seisansho" class="sidebar-item active" data-page="seisansho">
+                <div class="sidebar-item-icon sidebar-icon-emerald">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M8 10h8M8 14h4"/></svg>
+                </div>
+                <div class="sidebar-item-content">
+                    <span class="sidebar-item-title" data-i18n="sidebar_seisansho">精算書</span>
+                    <span class="sidebar-item-desc" data-i18n="sidebar_seisansho_desc">精算書の解析・Excel出力</span>
+                </div>
+                <div class="sidebar-item-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+            <a href="/seikyusho" class="sidebar-item" data-page="seikyusho">
+                <div class="sidebar-item-icon sidebar-icon-violet">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                </div>
+                <div class="sidebar-item-content">
+                    <span class="sidebar-item-title" data-i18n="sidebar_seikyusho">請求書</span>
+                    <span class="sidebar-item-desc" data-i18n="sidebar_seikyusho_desc">請求書の解析・Excel出力</span>
+                </div>
+                <div class="sidebar-item-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-version">v1.0.0</div>
+        </div>
+    </aside>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="app-layout">
+    <div class="app-container">
+        <!-- ========== STATE 1: UPLOAD ========== -->
+        <div id="state-upload" class="state-panel active">
+            <div class="page-header">
+                <div class="page-badge page-badge-emerald">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M8 10h8M8 14h4"/></svg>
+                    <span data-i18n="sidebar_seisansho">精算書</span>
+                </div>
+                <h1 class="page-title" data-i18n="seisansho_upload_title">精算書アップロード</h1>
+                <p class="page-desc" data-i18n="seisansho_upload_desc">精算書PDFをアップロードし、AIが自動解析してExcelテンプレートに出力します</p>
+            </div>
+
+            <div class="upload-card">
+                <div id="drop-area" class="drop-zone">
+                    <div class="drop-zone-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <circle cx="24" cy="24" r="24" fill="#ECFDF5"/>
+                            <path d="M24 16v16M16 24l8-8 8 8" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="drop-zone-title" data-i18n="drop_title">ここにファイルをドラッグ＆ドロップ</h3>
+                    <p class="drop-zone-hint" data-i18n="drop_hint">PDF・画像ファイル対応 &bull; コンテンツが鮮明なほど認識精度が向上します</p>
+                    <div class="drop-zone-buttons">
+                        <button class="btn btn-outline" id="browse-btn" data-i18n="browse_btn">ファイルを選択</button>
+                    </div>
+                    <input id="file-input" type="file" accept="application/pdf,image/*" multiple hidden />
+                </div>
+                <div id="selected-files-list" class="selected-files-list" style="display:none"></div>
+
+                <div class="upload-footer">
+                    <div class="upload-footer-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                        <span data-i18n="upload_safety">ファイルはAIにより安全に解析され、保存・共有されることはありません</span>
+                    </div>
+                    <button class="btn btn-primary btn-upload btn-emerald" id="upload-btn" disabled data-i18n="start_btn">
+                        解析開始
+                    </button>
+                </div>
+                <div class="fileid-lookup-section">
+                    <div class="fileid-lookup-row">
+                        <input type="text" id="fileid-input" placeholder="File ID を入力して再ダウンロード" data-i18n-placeholder="fileid_placeholder" class="fileid-input" autocomplete="off" spellcheck="false" />
+                        <button id="fileid-download-btn" class="btn btn-fileid-dl" disabled onclick="handleFileIdDownload()" data-i18n="fileid_download_btn">ダウンロード</button>
+                    </div>
+                    <div id="fileid-status" class="fileid-status"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== STATE 2: PROCESSING ========== -->
+        <div id="state-processing" class="state-panel">
+            <div class="page-header">
+                <div class="page-header-row">
+                    <div>
+                        <h1 class="page-title" data-i18n="processing_title">ファイル処理中</h1>
+                        <p class="page-file-name" id="processing-filename">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+                            <span id="proc-name">document.pdf</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <div class="progress-header">
+                    <span class="progress-label" data-i18n="current_status">現在のステータス</span>
+                </div>
+                <div class="progress-status-row">
+                    <span class="progress-text" id="progress-text" data-i18n="initial_progress_text">ファイルをアップロード中...</span>
+                    <span class="progress-percent" id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+                </div>
+                <div class="progress-hint" id="progress-hint" data-i18n="remaining_calc">残り時間：計算中...</div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-blue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                    </div>
+                    <div class="stat-label" data-i18n="file_size">ファイルサイズ</div>
+                    <div class="stat-value" id="stat-size">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-green">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                    </div>
+                    <div class="stat-label" data-i18n="page_count">ページ数</div>
+                    <div class="stat-value" id="stat-pages">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-purple">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <div class="stat-label" data-i18n="extract_fields">抽出フィールド</div>
+                    <div class="stat-value" id="stat-fields">--</div>
+                </div>
+            </div>
+
+            <div class="logs-card">
+                <div class="logs-header">
+                    <h3 data-i18n="process_log">処理ログ</h3>
+                    <span class="logs-live-badge">LIVE</span>
+                </div>
+                <div class="logs-body" id="logs-body">
+                    <div class="log-empty" data-i18n="waiting_start">処理開始を待機中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== STATE 3: COMPLETE ========== -->
+        <div id="state-complete" class="state-panel">
+            <div class="complete-hero">
+                <div class="complete-check">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="24" fill="#DCFCE7"/>
+                        <circle cx="24" cy="24" r="16" fill="#22C55E"/>
+                        <path d="M16 24l5 5 10-10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1 class="complete-title" data-i18n="complete_title">解析完了</h1>
+                <p class="complete-desc" data-i18n="complete_desc">ファイルはAIエンジンによる解析に成功しました。ダウンロードの準備が整いました</p>
+            </div>
+
+            <div class="result-stats-row">
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <div class="result-stat-label" data-i18n="extract_fields">抽出フィールド</div>
+                    <div class="result-stat-value" id="result-fields">--</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    </div>
+                    <div class="result-stat-label" data-i18n="accuracy">認識精度</div>
+                    <div class="result-stat-value" id="result-accuracy">99.8%</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <div class="result-stat-label" data-i18n="process_duration">処理時間</div>
+                    <div class="result-stat-value" id="result-time">--</div>
+                </div>
+            </div>
+
+            <div class="file-info-card">
+                <h3 class="file-info-title" data-i18n="file_info">ファイル情報</h3>
+                <div class="file-info-rows">
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                            <span data-i18n="file_name">ファイル名</span>
+                        </span>
+                        <span class="file-info-value" id="result-filename">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            <span data-i18n="file_size">ファイルサイズ</span>
+                        </span>
+                        <span class="file-info-value" id="result-filesize">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span data-i18n="process_time">処理日時</span>
+                        </span>
+                        <span class="file-info-value" id="result-date">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                            <span data-i18n="status">ステータス</span>
+                        </span>
+                        <span class="file-info-value status-badge">COMPLETED</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="extracted-table-container" class="extracted-table-container" style="display:none"></div>
+
+            <button class="btn btn-primary btn-download" id="download-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                <span data-i18n="download_btn">記入済みExcelをダウンロード</span>
+            </button>
+
+            <div class="complete-actions">
+                <button class="btn btn-outline btn-action" id="new-file-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    <span data-i18n="new_file_btn">新しいファイルを解析</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /app-layout -->
+
+    <footer class="app-footer">
+        <span>&copy; 2026 PDF Analyzer AI. All rights reserved.</span>
+    </footer>
+
+<script>window.API_PREFIX = "/api/seisansho";</script>
+<script src="/static/auth.js"></script>
+<script src="/static/i18n.js?v=9"></script>
+<script src="/static/utils.js"></script>
+<script src="/static/recent.js"></script>
+<script src="/static/ui.js?v=5"></script>
+<script src="/static/file-handler.js?v=7"></script>
+<script src="/static/api.js?v=14"></script>
+<script src="/static/app.js?v=12"></script>
+<script>
+  Auth.requireAuth();
+  Auth.fetchMe().then(function (user) {
+    if (!user) { Auth.clearToken(); window.location.href = '/login'; return; }
+    document.getElementById('nav-username').textContent = user.display_name;
+    if (user.role === 'super_admin' || user.role === 'root_admin' || user.role === 'company_owner') {
+      document.getElementById('admin-btn').style.display = '';
+    }
+    if (user.role === 'super_admin' || user.role === 'root_admin') {
+      document.getElementById('companies-btn').style.display = '';
+    }
+    // ページアクセス制御
+    var pages = user.allowed_pages || [];
+    if (user.role !== 'super_admin' && user.role !== 'root_admin' && pages.indexOf('seisansho') === -1) {
+      var _pageRoutes = { jusetsu: '/', seisansho: '/seisansho', seikyusho: '/seikyusho', beta: '/beta' };
+      for (var i = 0; i < pages.length; i++) {
+        if (_pageRoutes[pages[i]]) { window.location.href = _pageRoutes[pages[i]]; return; }
+      }
+      alert(t('alert_no_access'));
+      Auth.logout();
+      return;
+    }
+    // サイドバーの表示制御
+    if (user.role !== 'super_admin' && user.role !== 'root_admin') {
+      document.querySelectorAll('.sidebar-item[data-page]').forEach(function (item) {
+        var page = item.getAttribute('data-page');
+        if (pages.indexOf(page) === -1) item.style.display = 'none';
+      });
+    }
+  });
+  document.getElementById('logout-btn').addEventListener('click', function () {
+    if (confirm(t('confirm_logout'))) Auth.logout();
+  });
+  document.getElementById('admin-btn').addEventListener('click', function () {
+    window.location.href = '/admin';
+  });
+  document.getElementById('companies-btn').addEventListener('click', function () {
+    window.location.href = '/admin/companies';
+  });
+
+  // Sidebar toggle
+  (function() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    var toggle = document.getElementById('sidebar-toggle');
+    function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('visible'); }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('visible'); }
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('.sidebar-item').forEach(function(item) {
+      item.addEventListener('click', function() { if (window.innerWidth <= 1024) closeSidebar(); });
+    });
+  })();
+</script>
+</body>
+</html>

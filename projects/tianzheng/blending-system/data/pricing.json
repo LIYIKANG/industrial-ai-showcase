@@ -1,0 +1,29 @@
+{
+  "currency": "元/kg",
+  "points": [
+    {
+      "bloom": 60.0,
+      "price": 32.0
+    },
+    {
+      "bloom": 120.0,
+      "price": 38.0
+    },
+    {
+      "bloom": 180.0,
+      "price": 46.0
+    },
+    {
+      "bloom": 240.0,
+      "price": 62.0
+    },
+    {
+      "bloom": 275.0,
+      "price": 78.0
+    },
+    {
+      "bloom": 315.0,
+      "price": 92.0
+    }
+  ]
+}

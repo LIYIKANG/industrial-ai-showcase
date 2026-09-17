@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent 体验中心 · Industrial AI Studio</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Crect width='50' height='50' rx='12' fill='%23315dec'/%3E%3Ctext x='25' y='34' text-anchor='middle' fill='white' font-size='28'%3EA%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<a class="skip-link" href="#main-content">跳到主要内容</a>
+<aside class="sidebar" aria-label="功能导航">
+  <a class="brand" href="#overview"><span class="brand-symbol">A</span><span>Agent 体验中心<small>INDUSTRIAL AI STUDIO</small></span></a>
+  <div class="nav-label">工作空间</div>
+  <nav id="main-nav" aria-label="工作空间"><button data-page="overview" class="nav-button"><span>▦</span>能力总览</button><button data-page="wall" class="nav-button"><span>▥</span>多屏体验</button><button data-page="materials" class="nav-button"><span>▤</span>演示样例</button></nav>
+  <div class="nav-label">按功能选择 Agent</div><nav id="agent-nav" aria-label="Agent 导航"></nav>
+  <div class="sidebar-bottom"><span class="pulse"></span> 所有应用并行运行<button id="manage-button">运行状态 <span id="sidebar-count">准备中</span></button></div>
+</aside>
+<div class="app-shell">
+  <header class="topbar"><div class="breadcrumb">体验中心 <span>/</span> <strong id="page-label">能力总览</strong></div><div class="top-actions"><span id="global-status" class="live-pill" role="status">正在连接服务</span><button id="fullscreen-button">⛶ 全屏</button></div></header>
+  <div id="connection-notice" role="alert" hidden>暂时无法获取服务状态。已打开的系统会保留，请检查展示中心是否运行。<button id="retry-connection">重新连接</button></div>
+  <main id="main-content" tabindex="-1" aria-label="Agent 体验内容"><p class="empty">正在连接 Agent…</p></main>
+</div>
+<dialog id="status-dialog"><div class="dialog-head"><div><small>SERVICE STATUS</small><h2>运行状态</h2></div><button id="close-status" aria-label="关闭运行状态">✕</button></div><div id="service-list"></div><p class="muted">应用在后台同时运行。切换 Agent 不会关闭已打开的操作窗口。</p></dialog>
+<dialog id="confirm-dialog"><div class="dialog-head"><h2>重新加载当前系统？</h2></div><p>未提交的输入和当前页面结果可能丢失。此操作不会清除已保存的数据或步骤标记。</p><div class="dialog-actions"><button id="cancel-reload">保留当前操作</button><button id="confirm-reload" class="primary">确认重新加载</button></div></dialog>
+<div id="toast" role="status"></div>
+<script src="/assets/app.js"></script>
+</body></html>

@@ -1,0 +1,43 @@
+# Local dependencies and generated files
+.venv/
+venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Real environment settings, tokens and private keys
+.env
+.env.*
+!.env.example
+.showcase-secret*
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Current sessions and uploads; the curated Docker seed is required.
+*.db
+*.db-*
+*.sqlite*
+!/docker/seeds/solver_projects.db
+/runtime/
+output/
+outputs/
+logs/
+*.log
+*.pid
+*.tmp
+*.backup*
+
+# Distributable images and archives are produced locally, not stored in Git.
+/Docker交付包/
+/docker/package/
+*.tar
+*.tar.gz
+*.tgz
+*.zip

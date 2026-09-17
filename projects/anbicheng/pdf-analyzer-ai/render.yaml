@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: pdf-analyzer-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/init_db.py && python scripts/migrate_add_billing.py && uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: INIT_ADMIN_USERNAME
+        sync: false
+      - key: INIT_ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # ── Stripe 決済（値は Render UI で入力。Test→Live で差し替え） ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_BASIC
+        sync: false
+      - key: STRIPE_PRICE_STANDARD
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_FLAGSHIP
+        sync: false
+      # Checkout/Portal の戻り先（例: https://pdf-analyzer-ai.onrender.com、末尾スラッシュ無し）
+      - key: APP_BASE_URL
+        sync: false

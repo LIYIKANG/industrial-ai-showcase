@@ -1,0 +1,61 @@
+# ============================================================
+# deploy/pdf-analyzer.service — systemd 服务单元文件
+#
+# 使用方法（服务器上执行）：
+#   1. 按实际情况修改下面的 YOUR_USER 和项目路径
+#
+#   2. 复制到 systemd 目录：
+#      sudo cp deploy/pdf-analyzer.service /etc/systemd/system/
+#
+#   3. 重载并启动：
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable pdf-analyzer
+#      sudo systemctl start pdf-analyzer
+#
+#   常用命令：
+#      sudo systemctl status pdf-analyzer     # 查看状态
+#      sudo systemctl restart pdf-analyzer    # 重启（git pull 后执行）
+#      journalctl -u pdf-analyzer -f          # 实时查看日志
+# ============================================================
+
+[Unit]
+Description=PDF Analyzer AI - FastAPI Application
+After=network.target
+
+[Service]
+# ── 运行用户（替换为实际用户名，不要用 root） ─────────────────
+User=YOUR_USER
+Group=YOUR_USER
+
+# ── 项目路径（替换为实际路径） ────────────────────────────────
+WorkingDirectory=/var/www/pdf-analyzer
+
+# ── 环境变量 ──────────────────────────────────────────────────
+# 从 .env.production 加载（由 python-dotenv 在 config.py 中完成）
+Environment="APP_ENV=production"
+# 也可以在这里直接注入，但推荐用 .env.production 文件管理
+# Environment="CLAUDE_API_KEY=sk-ant-..."
+
+# ── 启动命令 ──────────────────────────────────────────────────
+# 使用虚拟环境中的 gunicorn，-c 指定配置文件
+ExecStart=/var/www/pdf-analyzer/venv/bin/gunicorn \
+    -c deploy/gunicorn.conf.py \
+    app:app
+
+# ── 进程管理 ──────────────────────────────────────────────────
+# 异常退出后自动重启
+Restart=on-failure
+RestartSec=5s
+
+# ── 日志 ─────────────────────────────────────────────────────
+# stdout/stderr 由 journald 收集，用 journalctl 查看
+StandardOutput=journal
+StandardError=journal
+
+# ── 资源限制（可选） ──────────────────────────────────────────
+# 防止单个进程占用过多内存（根据服务器配置调整）
+# MemoryMax=2G
+# CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

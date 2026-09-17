@@ -1,0 +1,29 @@
+name: industrial-ai-showcase
+services:
+  showcase:
+    image: industrial-ai-showcase:1.2.0
+    init: true
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:18080-18088:18080-18088
+    environment:
+      SHOWCASE_PUBLIC_PORT: '18080'
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      SHOWCASE_USE_CLOUD: ${SHOWCASE_USE_CLOUD:-0}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-local-text-demo-no-cloud-key}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    volumes:
+    - showcase-data:/data
+    stop_grace_period: 60s
+    shm_size: 256mb
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+volumes:
+  showcase-data: null

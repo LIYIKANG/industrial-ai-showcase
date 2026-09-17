@@ -1,0 +1,684 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EFESO Operations AI Workbench</title>
+  <link rel="stylesheet" href="/static/solver.css?v=4.2.0" />
+  <script src="/static/vendor/cytoscape.min.js"></script>
+  <script src="/static/vendor/echarts.min.js"></script>
+</head>
+<body>
+  <div class="appShell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brandMark">E</span>
+        <div>
+          <h1>EFESO Operations AI</h1>
+          <p>Private Ontology & Optimization Workbench</p>
+        </div>
+        <span class="brandPromise">Real Results, Together</span>
+      </div>
+
+      <div class="projectControls">
+        <label>
+          <span>项目名称</span>
+          <input id="projectName" value="双产品生产计划" />
+        </label>
+        <label>
+          <span>历史版本</span>
+          <select id="projectVersion" disabled>
+            <option value="">最新版本</option>
+          </select>
+        </label>
+        <button id="saveProject" title="保存项目版本">保存版本</button>
+      </div>
+
+      <div class="modelControls">
+        <label>
+          <span>建模模型</span>
+          <select id="providerName">
+            <option value="ollama">Ollama 本地</option>
+            <option value="deepseek">DeepSeek 云端</option>
+          </select>
+        </label>
+        <label>
+          <span>模型</span>
+          <input id="modelName" list="modelOptions" value="qwen2.5:7b" />
+          <datalist id="modelOptions"></datalist>
+        </label>
+        <label id="apiKeyBox" class="apiKeyField" hidden>
+          <span>API Key</span>
+          <input id="apiKey" type="password" autocomplete="off" placeholder="仅当前标签页保存" />
+        </label>
+        <button id="checkProvider">检查</button>
+      </div>
+    </header>
+
+    <div class="privacyBar">
+      <span class="privacyBadge">本地优先</span>
+      <span id="privacyText">HiGHS 求解和项目存储均在本机完成。Ollama 模式下，客户数据不离开电脑。</span>
+      <b id="connectionText">未检查模型连接</b>
+    </div>
+
+    <main class="workspace">
+      <aside class="leftRail">
+        <section class="railSection">
+          <div class="sectionHeading">
+            <h2>问题定义</h2>
+            <button id="loadExample" class="textButton">加载示例模型</button>
+          </div>
+          <label class="field">
+            <span>领域</span>
+            <input id="domainInput" placeholder="生产、物流、排班、库存、选址" />
+          </label>
+          <label class="field">
+            <span>优化目标提示</span>
+            <input id="objectiveHint" placeholder="最大利润、最小成本、最短时间" />
+          </label>
+          <label class="field">
+            <span>业务问题</span>
+            <textarea id="problemText" rows="13" spellcheck="false"></textarea>
+          </label>
+          <div class="fileRow">
+            <input id="fileInput" type="file" accept=".pdf,.pptx,.docx,.xlsx,.xls,.csv,.txt,.json" />
+          </div>
+          <button id="analyzeBtn" class="primary wide">AI 划分本体并建立数学模型</button>
+        </section>
+
+        <section class="railSection taskSection">
+          <div class="sectionHeading">
+            <h2>任务状态</h2>
+            <button id="cancelTask" class="textButton" disabled>取消</button>
+          </div>
+          <div class="progressTrack"><i id="taskProgress"></i></div>
+          <strong id="taskStage">等待操作</strong>
+          <p id="taskDetail">加载示例、输入问题或上传客户文件。</p>
+        </section>
+
+        <section class="railSection projectsSection">
+          <div class="sectionHeading">
+            <h2>本地项目</h2>
+            <button id="refreshProjects" class="textButton">刷新</button>
+          </div>
+          <div id="projectList" class="projectList"></div>
+        </section>
+      </aside>
+
+      <section class="mainStage">
+        <div class="metrics">
+          <div><span>决策变量</span><b id="metricVariables">-</b></div>
+          <div><span>约束</span><b id="metricConstraints">-</b></div>
+          <div><span>模型状态</span><b id="metricValidation">-</b></div>
+          <div><span>求解状态</span><b id="metricSolve">-</b></div>
+          <div><span>目标值</span><b id="metricObjective">-</b></div>
+        </div>
+
+        <nav class="viewTabs" aria-label="工作区视图">
+          <button class="viewTab active" data-view="systemView">体系总览</button>
+          <button class="viewTab" data-view="graphView">本体图谱</button>
+          <button class="viewTab" data-view="ontologyView">本体数据</button>
+          <button class="viewTab" data-view="modelView">数学模型</button>
+          <button class="viewTab" data-view="resultView">求解结果</button>
+          <button class="viewTab" data-view="compareView">方案对比</button>
+          <button class="viewTab" data-view="atpView">化工 ATP</button>
+          <button class="viewTab" data-view="promiseView">订单承诺</button>
+          <button class="viewTab" data-view="rankView">多目标排序</button>
+          <button class="viewTab" data-view="kitView">物料齐套</button>
+        </nav>
+
+        <section id="systemView" class="viewPane active">
+          <div class="systemHero">
+            <div>
+              <h2>AI + 求解器体系：本体、大模型、数学模型的关系</h2>
+              <p>业务问题先由大模型理解，再由本体统一术语、关系和业务规则，数学模型把问题转成可计算表达，最后由本地求解器严格计算并交给大模型解释。</p>
+            </div>
+            <div class="systemHeroStats" id="systemHeroStats"></div>
+          </div>
+
+          <div class="systemFlow" aria-label="AI 求解器六步流程">
+            <article class="flowCard business">
+              <span class="flowIndex">1</span>
+              <i class="flowIcon personIcon"></i>
+              <h3>业务提出问题</h3>
+              <p id="flowProblemStatus">等待输入业务问题</p>
+            </article>
+            <article class="flowCard llm">
+              <span class="flowIndex">2</span>
+              <i class="flowIcon brainIcon"></i>
+              <h3>大模型理解意图</h3>
+              <p id="flowLlmStatus">识别目标、对象、约束和缺失信息</p>
+            </article>
+            <article class="flowCard ontology">
+              <span class="flowIndex">3</span>
+              <i class="flowIcon ontologyIcon"></i>
+              <h3>本体校准语义与规则</h3>
+              <p id="flowOntologyStatus">统一概念、属性、关系和规则</p>
+            </article>
+            <article class="flowCard math">
+              <span class="flowIndex">4</span>
+              <i class="flowIcon cubeIcon"></i>
+              <h3>数学模型建模</h3>
+              <p id="flowMathStatus">形成变量、目标函数和约束</p>
+            </article>
+            <article class="flowCard solver">
+              <span class="flowIndex">5</span>
+              <i class="flowIcon gearIcon"></i>
+              <h3>求解器计算</h3>
+              <p id="flowSolverStatus">调用本地 HiGHS 严格求解</p>
+            </article>
+            <article class="flowCard result">
+              <span class="flowIndex">6</span>
+              <i class="flowIcon reportIcon"></i>
+              <h3>大模型解释结果</h3>
+              <p id="flowResultStatus">输出可执行方案和优化建议</p>
+            </article>
+          </div>
+
+          <div class="systemRelationMap">
+            <section class="relationBlock llmBlock">
+              <div class="relationTitle">
+                <i class="flowIcon brainIcon"></i>
+                <h3>大模型</h3>
+              </div>
+              <p>负责理解自然语言、补全语境、生成建模初稿和解释结果。</p>
+              <ul>
+                <li id="llmRelationProvider">当前：Ollama 本地</li>
+                <li id="llmRelationPrivacy">客户数据本地优先</li>
+              </ul>
+            </section>
+            <section class="relationBlock ontologyBlock">
+              <div class="relationTitle">
+                <i class="flowIcon ontologyIcon"></i>
+                <h3>本体</h3>
+              </div>
+              <p>沉淀业务概念、属性、关系和规则，约束大模型不要乱解释。</p>
+              <ul>
+                <li id="ontologyRelationCount">实体 0，关系 0</li>
+                <li id="ontologyRelationAudit">完整性待评估</li>
+              </ul>
+            </section>
+            <section class="relationBlock mathBlock">
+              <div class="relationTitle">
+                <i class="flowIcon cubeIcon"></i>
+                <h3>数学模型</h3>
+              </div>
+              <p>把业务问题表达成变量、目标函数、约束条件和参数。</p>
+              <ul>
+                <li id="mathRelationCount">变量 0，约束 0</li>
+                <li id="mathRelationStatus">等待校验</li>
+              </ul>
+            </section>
+            <section class="relationBlock solverBlock">
+              <div class="relationTitle">
+                <i class="flowIcon gearIcon"></i>
+                <h3>求解器</h3>
+              </div>
+              <p>只做确定性的数值计算，最优性、不可行和边界结论以求解器为准。</p>
+              <ul>
+                <li>引擎：SciPy HiGHS</li>
+                <li id="solverRelationStatus">尚未求解</li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="systemBottomGrid">
+            <section class="conceptPanel">
+              <div class="sectionHeading compact">
+                <h2>四类对象区别</h2>
+              </div>
+              <div class="conceptGrid">
+                <div>
+                  <b>大模型</b>
+                  <span>关注意图理解、知识生成、交互解释</span>
+                  <em>风险：可能幻觉，需要本体和校验约束</em>
+                </div>
+                <div>
+                  <b>本体</b>
+                  <span>关注业务概念、属性、关系、规则</span>
+                  <em>价值：稳定、可复用、可追溯</em>
+                </div>
+                <div>
+                  <b>数学模型</b>
+                  <span>关注变量、目标函数、约束条件</span>
+                  <em>价值：让问题可计算、可验证</em>
+                </div>
+                <div>
+                  <b>求解器</b>
+                  <span>关注最优解、可行解、不可行证明</span>
+                  <em>价值：严格、快速、可本地部署</em>
+                </div>
+              </div>
+            </section>
+            <section class="systemActions">
+              <div class="sectionHeading compact">
+                <h2>下一步操作</h2>
+              </div>
+              <div class="actionStack">
+                <button id="viewGraphFromSystem">查看本体图谱</button>
+                <button id="viewOntologyFromSystem">查看本体三表</button>
+                <button id="viewModelFromSystem">编辑数学模型</button>
+                <button id="solveFromSystem" class="primary">计算最优方案</button>
+              </div>
+              <p id="systemNextStep">先加载示例或输入客户问题，再调用 AI 划分本体并建立数学模型。</p>
+            </section>
+          </div>
+        </section>
+
+        <section id="graphView" class="viewPane">
+          <div class="graphToolbar">
+            <div>
+              <h2>优化本体知识图谱</h2>
+              <p id="graphStats">尚未生成图谱</p>
+            </div>
+            <div class="graphActions">
+              <input id="graphSearch" placeholder="搜索节点" />
+              <select id="relationFilter"><option value="">全部关系</option></select>
+              <button id="fitGraph" title="适应视图">适应</button>
+              <button id="relayoutGraph" title="重新布局">重排</button>
+              <button id="graphNeighborhood" title="只查看选中节点的一阶邻域">邻域</button>
+              <button id="saveGraphLayout" title="在本机保存当前图谱布局">保存布局</button>
+              <button id="graphFullscreen" title="全屏查看图谱">全屏</button>
+              <button id="zoomOut" class="squareButton" title="缩小">−</button>
+              <button id="zoomIn" class="squareButton" title="放大">+</button>
+            </div>
+          </div>
+          <div id="graphFilters" class="graphFilters"></div>
+          <div id="graphSurface" class="graphSurface"></div>
+        </section>
+
+        <section id="ontologyView" class="viewPane">
+          <div class="ontologyHeader">
+            <div>
+              <h2>完整本体数据与建模审计</h2>
+              <p>保留业务抽取明细和数学模型结构。点击任意行可在右侧查看完整内容。</p>
+            </div>
+            <div id="ontologySummary" class="ontologySummary"></div>
+          </div>
+          <nav class="dataTabs" aria-label="本体数据表">
+            <button class="dataTab active" data-table="ontologyEntities">实体表</button>
+            <button class="dataTab" data-table="ontologyAttributes">属性表</button>
+            <button class="dataTab" data-table="ontologyRelationships">关系表</button>
+            <button class="dataTab" data-table="ontologyVariables">决策变量</button>
+            <button class="dataTab" data-table="ontologyParameters">参数</button>
+            <button class="dataTab" data-table="ontologyConstraints">约束</button>
+            <button class="dataTab" data-table="ontologyAudit">建模审计</button>
+          </nav>
+          <div class="ontologyTables">
+            <div class="ontologyTablePane active" data-table-pane="ontologyEntities"><div class="tableWrap dataTableWrap"><table id="ontologyEntities"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyAttributes"><div class="tableWrap dataTableWrap"><table id="ontologyAttributes"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyRelationships"><div class="tableWrap dataTableWrap"><table id="ontologyRelationships"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyVariables"><div class="tableWrap dataTableWrap"><table id="ontologyVariables"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyParameters"><div class="tableWrap dataTableWrap"><table id="ontologyParameters"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyConstraints"><div class="tableWrap dataTableWrap"><table id="ontologyConstraints"></table></div></div>
+            <div class="ontologyTablePane" data-table-pane="ontologyAudit"><div id="ontologyAudit" class="auditGrid"></div></div>
+          </div>
+        </section>
+
+        <section id="modelView" class="viewPane">
+          <div class="modelToolbar">
+            <div>
+              <h2>标准数学模型 JSON</h2>
+              <p>可人工修改变量、目标系数、上下界和约束。修改后先校验，再本地求解。</p>
+            </div>
+            <div>
+              <button id="formatModel">格式化</button>
+              <button id="validateModel">校验模型</button>
+              <button id="applyModel" class="primary">应用修改</button>
+            </div>
+          </div>
+          <textarea id="modelEditor" class="codeEditor" spellcheck="false"></textarea>
+        </section>
+
+        <section id="resultView" class="viewPane">
+          <div id="resultBanner" class="resultBanner neutral">
+            <div>
+              <strong>尚未执行严格求解</strong>
+              <span>校验数学模型后，调用本地 HiGHS。</span>
+            </div>
+          </div>
+          <div class="resultGrid">
+            <section>
+              <h3>决策变量</h3>
+              <div id="variableChart" class="barChart"></div>
+              <div class="tableWrap"><table id="variableTable"></table></div>
+            </section>
+            <section>
+              <h3>约束松弛量</h3>
+              <div id="constraintChart" class="barChart constraintChart"></div>
+              <div class="tableWrap"><table id="constraintTable"></table></div>
+            </section>
+          </div>
+          <details class="rawDetails">
+            <summary>完整求解结果</summary>
+            <pre id="rawResult"></pre>
+          </details>
+        </section>
+
+        <section id="compareView" class="viewPane">
+          <div class="compareHeader">
+            <div>
+              <h2>方案对比</h2>
+              <p>将当前结果设为基线，再调整参数重新求解。</p>
+            </div>
+            <button id="setBaseline">设为基线方案</button>
+          </div>
+          <div id="compareSummary" class="compareSummary"></div>
+          <div class="tableWrap"><table id="compareTable"></table></div>
+        </section>
+        <section id="atpView" class="viewPane">
+          <div class="atpHeader">
+            <div>
+              <h2>化工 ATP 可视化</h2>
+              <p>物料 × 日期的可用量承诺矩阵，借鉴 SAP aATP 算法。</p>
+            </div>
+            <div class="atpActions">
+              <button id="atpLoadDemo" class="primary">加载示例数据</button>
+              <button id="atpCompute" disabled>计算 ATP</button>
+              <button id="atpSaveSnapshot" disabled>保存快照</button>
+            </div>
+          </div>
+
+          <div class="chemJumpBar">
+            <span class="chemJumpHint">查看关联项目（进入时加载对应数据）：</span>
+            <button class="chemJumpBtn" data-jump="graphView">→ 本体图谱</button>
+            <button class="chemJumpBtn" data-jump="modelView">→ 数学模型</button>
+            <button class="chemJumpBtn" data-jump="resultView">→ 求解结果</button>
+            <button class="chemJumpBtn" data-jump="compareView">→ 方案对比</button>
+          </div>
+          <div class="atpImport">
+            <label>物料主数据 (CSV/Excel)
+              <input id="atpFileMaterials" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>在手库存
+              <input id="atpFileInventory" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>在途采购
+              <input id="atpFileInbound" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>在单未交
+              <input id="atpFileOrders" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>客户/物料优先级矩阵
+              <input id="atpFilePriorities" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>BOM 子件关系
+              <input id="atpFileBom" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>可替代料
+              <input id="atpFileSubs" type="file" accept=".csv,.xlsx,.xls" />
+            </label>
+            <label>Horizon (天)
+              <input id="atpHorizon" type="number" min="1" max="180" value="30" />
+            </label>
+            <button id="atpUpload">上传并计算</button>
+          </div>
+
+          <div class="atpSummary" id="atpSummary"></div>
+
+          <div class="atpAlerts">
+            <h3>缺口预警</h3>
+            <div id="atpAlertsList" class="alertsList"></div>
+          </div>
+
+          <div class="atpTableWrap">
+            <h3>ATP 主表（行=物料，列=未来日期）</h3>
+            <div class="tableScroll">
+              <table id="atpTable"></table>
+            </div>
+          </div>
+
+          <div class="atpDetail">
+            <h3>单物料趋势</h3>
+            <select id="atpMaterialSelect"></select>
+            <div id="atpDetailContent" class="atpDetailContent"></div>
+            <div id="atpMaterialChart" class="atpMaterialChart"></div>
+          </div>
+
+          <details class="rawDetails">
+            <summary>完整 ATP 结果（JSON）</summary>
+            <pre id="atpRawResult"></pre>
+          </details>
+        </section>
+
+        <section id="promiseView" class="viewPane">
+          <div class="atpHeader">
+            <div>
+              <h2>订单快速承诺交期</h2>
+              <p>OR-Tools CP-SAT 求解器，给出可承诺 / 最早交期 / 替代物料建议。</p>
+            </div>
+            <div class="atpActions">
+              <button id="promiseLoadDemo" class="primary">加载示例</button>
+              <button id="promiseSolve" disabled>运行 CP-SAT</button>
+            </div>
+          </div>
+
+          <div class="chemJumpBar">
+            <span class="chemJumpHint">查看关联项目（进入时加载对应数据）：</span>
+            <button class="chemJumpBtn" data-jump="graphView">→ 本体图谱</button>
+            <button class="chemJumpBtn" data-jump="modelView">→ 数学模型</button>
+            <button class="chemJumpBtn" data-jump="resultView">→ 求解结果</button>
+            <button class="chemJumpBtn" data-jump="compareView">→ 方案对比</button>
+          </div>
+          <div class="atpImport">
+            <label>物料
+              <select id="promiseMaterial"></select>
+            </label>
+            <label>数量 (kg)
+              <input id="promiseQty" type="number" min="1" step="1" value="500" />
+            </label>
+            <label>期望交期
+              <input id="promiseDate" type="date" />
+            </label>
+            <label>客户等级
+              <select id="promiseTier">
+                <option value="premium">premium</option>
+                <option value="comfort" selected>comfort</option>
+                <option value="base">base</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="atpSummary" id="promiseSummary"></div>
+
+          <div class="atpTableWrap">
+            <h3>承诺结果</h3>
+            <div class="tableScroll">
+              <table id="promiseTable"></table>
+            </div>
+          </div>
+
+          <div class="atpDetail">
+            <h3>替代物料</h3>
+            <div id="promiseAlternates" class="atpDetailContent"></div>
+          </div>
+
+          <details class="rawDetails">
+            <summary>完整 JSON</summary>
+            <pre id="promiseRawResult"></pre>
+          </details>
+        </section>
+
+        <section id="rankView" class="viewPane">
+          <div class="atpHeader">
+            <div>
+              <h2>多目标订单排序</h2>
+              <p>供应缺口下，给出基于目标与优先级的订单排序建议（加权 / 字典序 / ε-约束 / Pareto）。</p>
+            </div>
+            <div class="atpActions">
+              <button id="rankLoadDemo" class="primary">加载示例</button>
+              <select id="rankStrategy">
+                <option value="weighted_sum">加权求和</option>
+                <option value="lexicographic">字典序</option>
+                <option value="epsilon_constraint">ε-约束</option>
+                <option value="pareto">Pareto 前沿</option>
+              </select>
+              <button id="rankCompute" disabled>运行排序</button>
+            </div>
+          </div>
+
+          <div class="chemJumpBar">
+            <span class="chemJumpHint">查看关联项目（进入时加载对应数据）：</span>
+            <button class="chemJumpBtn" data-jump="graphView">→ 本体图谱</button>
+            <button class="chemJumpBtn" data-jump="modelView">→ 数学模型</button>
+            <button class="chemJumpBtn" data-jump="resultView">→ 求解结果</button>
+            <button class="chemJumpBtn" data-jump="compareView">→ 方案对比</button>
+          </div>
+          <div class="atpImport">
+            <label>权重 优先级
+              <input id="rankWeightPri" type="number" min="0" max="1" step="0.05" value="0.5" />
+            </label>
+            <label>权重 延期惩罚
+              <input id="rankWeightLate" type="number" min="0" max="1" step="0.05" value="0.3" />
+            </label>
+            <label>权重 数量
+              <input id="rankWeightQty" type="number" min="0" max="1" step="0.05" value="0.2" />
+            </label>
+            <label>最大允许延期 (天)
+              <input id="rankEpsLate" type="number" min="0" max="365" step="1" value="0" />
+            </label>
+          </div>
+
+          <div class="atpSummary" id="rankSummary"></div>
+
+          <div class="atpTableWrap">
+            <h3>排序结果</h3>
+            <div class="tableScroll">
+              <table id="rankTable"></table>
+            </div>
+          </div>
+
+          <details class="rawDetails">
+            <summary>完整 JSON</summary>
+            <pre id="rankRawResult"></pre>
+          </details>
+        </section>
+
+        <section id="kitView" class="viewPane">
+          <div class="atpHeader">
+            <div>
+              <h2>物料齐套性检查</h2>
+              <p>展开成品/中间体 BOM 到原料层，对比在手+在途库存，输出每层齐套 / 缺口状态和替代料恢复建议。</p>
+            </div>
+            <div class="atpActions">
+              <button id="kitLoadDemo" class="primary">加载示例</button>
+              <button id="kitCheck" disabled>运行齐套检查</button>
+            </div>
+          </div>
+
+          <div class="chemJumpBar">
+            <span class="chemJumpHint">查看关联项目（进入时加载对应数据）：</span>
+            <button class="chemJumpBtn" data-jump="graphView">→ 本体图谱</button>
+            <button class="chemJumpBtn" data-jump="modelView">→ 数学模型</button>
+            <button class="chemJumpBtn" data-jump="resultView">→ 求解结果</button>
+            <button class="chemJumpBtn" data-jump="compareView">→ 方案对比</button>
+          </div>
+          <div class="atpImport">
+            <label>父物料
+              <select id="kitParent"></select>
+            </label>
+            <label>数量 (kg)
+              <input id="kitQty" type="number" min="1" step="1" value="500" />
+            </label>
+            <label>
+              <input id="kitUseSub" type="checkbox" checked /> 启用替代料恢复建议
+            </label>
+          </div>
+
+          <div id="kitGauge" class="kitGauge" style="display:none"></div>
+
+          <div class="atpSummary" id="kitSummary"></div>
+
+          <div class="atpTableWrap">
+            <h3>叶子物料齐套明细</h3>
+            <div class="tableScroll">
+              <table id="kitTable"></table>
+            </div>
+          </div>
+
+          <div class="atpDetail">
+            <h3>替代料恢复建议</h3>
+            <div id="kitRecovery" class="atpDetailContent"></div>
+          </div>
+
+          <div id="kitSkippedSubs" class="atpAlerts" style="display:none"></div>
+
+          <div class="atpDetail">
+            <h3>批量齐套检查</h3>
+            <p style="font-size:11px;color:var(--muted);margin:4px 0 8px">
+              一行一个，格式：<code>父物料,数量</code>（例：<code>MAT-007,500</code>）。回车分隔。
+            </p>
+            <div class="atpImport" style="grid-template-columns:1fr auto;align-items:start">
+              <textarea id="kitBatchInput" rows="3" placeholder="MAT-007,500&#10;MAT-008,300&#10;MAT-021,200">MAT-007,500
+MAT-008,300
+MAT-021,200</textarea>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <button id="kitBatchRun" class="primary">批量运行</button>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px">
+                  <input id="kitBatchUseSub" type="checkbox" checked /> 启用替代料
+                </label>
+              </div>
+            </div>
+            <div id="kitBatchResult" class="atpDetailContent" style="margin-top:10px"></div>
+          </div>
+
+          <details class="rawDetails">
+            <summary>完整 JSON</summary>
+            <pre id="kitRawResult"></pre>
+          </details>
+        </section>
+      </section>
+
+      <aside class="rightRail">
+        <section class="railSection solverSection">
+          <div class="sectionHeading">
+            <h2>本地求解器</h2>
+            <span class="localTag">LOCAL</span>
+          </div>
+          <div class="solverIdentity">
+            <strong>SciPy HiGHS</strong>
+            <span>LP / MILP</span>
+          </div>
+          <label class="field">
+            <span>时间上限（秒）</span>
+            <input id="timeLimit" type="number" min="1" max="600" value="60" />
+          </label>
+          <button id="solveBtn" class="solveButton wide">计算最优方案</button>
+          <p class="solverNote">大模型不参与数值计算。状态、最优性和不可行结论均来自本地求解器。</p>
+        </section>
+
+        <section class="railSection">
+          <div class="sectionHeading">
+            <h2>模型校验</h2>
+            <span id="validationBadge" class="statusBadge neutral">未校验</span>
+          </div>
+          <div id="validationList" class="validationList"></div>
+        </section>
+
+        <section class="railSection">
+          <div class="sectionHeading">
+            <h2 id="inspectorTitle">节点详情</h2>
+          </div>
+          <div id="inspectorBody" class="inspectorBody">点击图谱节点查看属性和邻接关系。</div>
+        </section>
+
+        <section class="railSection exportSection">
+          <div class="sectionHeading"><h2>交付导出</h2></div>
+          <div class="exportButtons">
+            <button id="exportJson">JSON</button>
+            <button id="exportExcel">Excel</button>
+            <button id="exportGraphml">GraphML</button>
+            <button id="exportCypher">Cypher</button>
+          </div>
+          <p>导出本体、数学模型、校验结果和严格求解结果。</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+  <script src="/static/app.js?v=4.2.1"></script>
+</body>
+</html>
+
+
+
+

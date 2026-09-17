@@ -1,0 +1,16 @@
+﻿customer_tier,material_category,weight
+premium,finished,100
+premium,intermediate,80
+premium,raw_material,60
+premium,co_product,40
+premium,byproduct,20
+comfort,finished,50
+comfort,intermediate,40
+comfort,raw_material,30
+comfort,co_product,20
+comfort,byproduct,10
+base,finished,10
+base,intermediate,8
+base,raw_material,6
+base,co_product,4
+base,byproduct,2

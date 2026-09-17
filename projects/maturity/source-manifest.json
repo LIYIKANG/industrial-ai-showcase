@@ -1,0 +1,15 @@
+{
+  "source": "桌面/个人资料/官网/lib/assessment",
+  "files": {
+    "config.ts": {
+      "original_sha256": "91b7f79089e1306aab558a06a20b8b36ed85a5020b05a8d2d748d396907218e6"
+    },
+    "scoring.ts": {
+      "original_sha256": "1d71ca17b5a2eb64d8329406a2a649d2b5ba56910417d243b38ffb0b85676921"
+    },
+    "rules.ts": {
+      "original_sha256": "6827adfc862de404e738691ed2dfc61642b2b701f89acaf437e003630d8772d0"
+    }
+  },
+  "adaptation": "保留原题库和评分/推荐算法；本地副本仅调整浏览器模块导入扩展名及题目数量注释。"
+}

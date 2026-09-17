@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ユーザー管理 — PDF Analyzer AI</title>
+  <link rel="stylesheet" href="/static/style.css?v=4" />
+  <style>
+    /* ── 管理ページ専用スタイル ── */
+    .admin-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 32px); }
+
+    .page-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .page-title { font-size: 22px; font-weight: 700; color: #1E293B; }
+    .page-sub { font-size: 13px; color: #64748B; margin-top: 4px; }
+
+    .btn-sm {
+      padding: 8px 16px; background: #2563EB; color: #fff; border: none;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-sm:hover { background: #1D4ED8; }
+    .btn-sm.outline {
+      background: #fff; color: #374151; border: 1.5px solid #E2E8F0;
+    }
+    .btn-sm.outline:hover { background: #F8FAFC; }
+    .btn-sm.danger { background: #EF4444; }
+    .btn-sm.danger:hover { background: #DC2626; }
+
+    /* ── タブ ── */
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      border-bottom: 1.5px solid #E2E8F0; padding-bottom: 0;
+    }
+    .tab {
+      padding: 8px 16px; font-size: 13px; font-weight: 600; color: #64748B;
+      cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover { color: #334155; }
+    .tab.active { color: #2563EB; border-bottom-color: #2563EB; }
+    .tab-bar a.tab { text-decoration: none; }
+
+    /* 2階層タブ：上位＝セクション切替（ユーザー管理/Company管理）、下位＝ビュー切替 */
+    .tab-bar-primary { margin-bottom: 6px; border-bottom: none; }
+    .tab-bar-primary .tab { font-size: 14px; font-weight: 700; border-bottom: none; margin-bottom: 0; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── テーブル ── */
+    .table-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: #F8FAFC; }
+    th {
+      padding: 11px 16px; text-align: left; font-weight: 600;
+      color: #64748B; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    td { padding: 12px 16px; color: #374151; border-top: 1px solid #F1F5F9; }
+    tr:hover td { background: #F8FAFC; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-owner { background: #FDF4FF; color: #7C3AED; }
+    .badge-admin { background: #EFF6FF; color: #2563EB; }
+    .badge-operator { background: #F0FDF4; color: #16A34A; }
+    .badge-super_admin    { background: #EFF6FF; color: #2563EB; }
+    .badge-company_owner  { background: #FDF4FF; color: #7C3AED; }
+    .badge-company_member { background: #F0FDF4; color: #16A34A; }
+    .badge-inactive { background: #F1F5F9; color: #94A3B8; }
+    .badge-active { background: #DCFCE7; color: #16A34A; }
+    .badge-warn { background: #FFF7ED; color: #C2410C; }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    /* ── モーダル ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 100; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; padding: 32px;
+      width: 100%; max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: #1E293B; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .form-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    select.form-input { background: #fff; cursor: pointer; }
+
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+    .modal-error {
+      background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
+      padding: 9px 13px; font-size: 13px; color: #DC2626; margin-bottom: 14px;
+      display: none;
+    }
+
+    /* ── ローディング/空欄 ── */
+    .loading-row td { text-align: center; padding: 32px; color: #94A3B8; }
+    .empty-row td { text-align: center; padding: 32px; color: #94A3B8; }
+
+    /* ── 監査ログ ── */
+    .action-login_success { color: #16A34A; font-weight: 600; }
+    .action-login_failed { color: #DC2626; font-weight: 600; }
+    .action-login_blocked { color: #D97706; font-weight: 600; }
+    .action-logout { color: #2563EB; }
+    .action-user_deactivated { color: #9333EA; }
+    .action-pdf_processed { color: #0369A1; font-weight: 600; }
+
+    .logs-filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0; flex-wrap: wrap;
+    }
+    .logs-filter-bar label { font-size: 13px; color: #374151; font-weight: 600; white-space: nowrap; }
+    .logs-filter-select {
+      padding: 6px 10px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      font-size: 13px; background: #fff; cursor: pointer; outline: none;
+      transition: border-color 0.15s;
+    }
+    .logs-filter-select:focus { border-color: #2563EB; }
+
+    /* ── ユーザー一覧フィルタ ── */
+    .users-filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0; flex-wrap: wrap;
+    }
+    .users-filter-bar .filter-label {
+      font-size: 13px; color: #374151; font-weight: 600; white-space: nowrap;
+    }
+    .filter-segment { display: inline-flex; gap: 4px; }
+    .filter-segment-btn {
+      padding: 6px 14px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: #64748B; transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .filter-segment-btn:hover { background: #F1F5F9; }
+    .filter-segment-btn.active {
+      background: #2563EB; color: #fff; border-color: #2563EB;
+    }
+    .filter-count { font-size: 12px; color: #94A3B8; margin-left: auto; }
+
+    /* ── 利用状況 ── */
+    .month-nav {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0; flex-wrap: wrap;
+    }
+    .month-nav-btn {
+      padding: 5px 14px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: #374151; transition: background 0.15s;
+    }
+    .month-nav-btn:hover { background: #F1F5F9; }
+    .month-label { font-size: 15px; font-weight: 700; color: #1E293B; min-width: 110px; text-align: center; }
+    .usage-total-row td { font-weight: 700; background: #F8FAFC; border-top: 2px solid #E2E8F0; }
+    .detail-cell { padding: 0 !important; }
+    .detail-inner { padding: 0 8px 8px; background: #F8FAFC; }
+    .detail-inner table { margin: 0; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <!-- 导航 -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#2563EB"/>
+          <path d="M9 8h10l4 4v12a2 2 0 01-2 2H9a2 2 0 01-2V10a2 2 0 012-2z" fill="white" opacity="0.9"/>
+          <path d="M19 8v4h4" fill="none" stroke="white" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="nav-title">PDF Analyzer</span>
+      <span style="margin-left:8px;font-size:12px;color:#94A3B8;font-weight:500;" data-i18n="admin_panel_label">管理画面</span>
+    </div>
+    <div class="nav-right">
+      <button class="lang-toggle-btn" id="lang-toggle" title="言語切替" data-i18n-title="nav_lang_title" style="margin-right:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <span id="lang-label">中文</span>
+      </button>
+      <a href="/" style="font-size:13px;color:#64748B;text-decoration:none;margin-right:12px;" data-i18n="admin_back_to_main">
+        ← メインに戻る
+      </a>
+      <div class="nav-avatar" id="nav-avatar" style="cursor:pointer" title="ログアウト" data-i18n-title="admin_logout_title"></div>
+    </div>
+  </nav>
+
+  <div class="admin-container">
+    <!-- 页头 -->
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title" data-i18n="admin_page_title">ユーザー管理</h1>
+        <p class="page-sub" data-i18n="admin_page_sub">システムへのアクセス権を管理します</p>
+      </div>
+      <button class="btn-sm" id="btn-new-user">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span data-i18n="admin_btn_new_user">ユーザー追加</span>
+      </button>
+    </div>
+
+    <!-- 上级标签：分区切换（用户管理 / 公司管理） -->
+    <div class="tab-bar tab-bar-primary">
+      <span class="tab active" data-i18n="admin_tab_users">ユーザー一覧</span>
+      <a class="tab" id="tab-companies-link" href="/admin/companies" style="display:none;" data-i18n="admin_tab_companies">Company一覧</a>
+    </div>
+
+    <!-- 下级标签：用户管理内视图切换 -->
+    <div class="tab-bar tab-bar-sub">
+      <div class="tab active" data-tab="users" data-i18n="admin_tab_list">一覧</div>
+      <div class="tab" data-tab="logs" data-i18n="admin_tab_logs">監査ログ</div>
+      <div class="tab" data-tab="usage" data-i18n="admin_tab_usage">利用状況</div>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="tab-panel active" id="panel-users">
+      <div class="table-card">
+        <div class="users-filter-bar">
+          <span class="filter-label" data-i18n="admin_filter_status">ステータス：</span>
+          <div class="filter-segment" id="users-status-filter">
+            <button class="filter-segment-btn active" data-status="all" data-i18n="admin_filter_all">全件</button>
+            <button class="filter-segment-btn" data-status="active" data-i18n="admin_filter_active">有効</button>
+            <button class="filter-segment-btn" data-status="inactive" data-i18n="admin_filter_inactive">無効</button>
+          </div>
+          <span class="filter-count" id="users-filter-count"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="admin_th_username">ユーザー名</th>
+              <th data-i18n="admin_th_display">表示名</th>
+              <th data-i18n="admin_th_role">ロール</th>
+              <th data-i18n="admin_th_company">Company</th>
+              <th data-i18n="admin_th_pages">アクセス可能ページ</th>
+              <th data-i18n="admin_th_status">ステータス</th>
+              <th data-i18n="admin_th_created">作成日</th>
+              <th data-i18n="admin_th_actions">操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr class="loading-row"><td colspan="8" data-i18n="admin_loading">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 审计日志 -->
+    <div class="tab-panel" id="panel-logs">
+      <div class="table-card">
+        <div class="logs-filter-bar">
+          <label for="log-user-filter" data-i18n="admin_log_filter_label">ユーザー絞り込み：</label>
+          <select class="logs-filter-select" id="log-user-filter">
+            <option value="" data-i18n="admin_log_filter_all">全ユーザー</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="admin_th_log_datetime">日時</th>
+              <th data-i18n="admin_th_username">ユーザー名</th>
+              <th data-i18n="admin_th_log_action">アクション</th>
+              <th data-i18n="admin_th_log_ip">IP アドレス</th>
+              <th data-i18n="admin_th_log_detail">詳細</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr class="loading-row"><td colspan="5" data-i18n="admin_loading">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 使用情况 -->
+    <div class="tab-panel" id="panel-usage">
+      <div class="table-card">
+        <div class="month-nav">
+          <button class="month-nav-btn" id="usage-prev">&#9664;</button>
+          <span class="month-label" id="usage-month-label"></span>
+          <button class="month-nav-btn" id="usage-next">&#9654;</button>
+          <div style="margin-left:auto;">
+            <button class="btn-sm outline" id="export-csv-btn" data-i18n="admin_csv_export">CSV エクスポート</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="admin_th_username">ユーザー名</th>
+              <th data-i18n="admin_th_usage_jobs">処理件数</th>
+              <th data-i18n="admin_th_usage_pages">総ページ数</th>
+              <th data-i18n="admin_th_usage_accuracy">平均精度</th>
+              <th data-i18n="admin_th_usage_last">最終利用</th>
+              <th data-i18n="admin_th_usage_detail">詳細</th>
+            </tr>
+          </thead>
+          <tbody id="usage-tbody">
+            <tr class="loading-row"><td colspan="6" data-i18n="admin_loading">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 用户创建/编辑 模态框 ── -->
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title" data-i18n="admin_modal_add_title">ユーザーを追加</h2>
+      <div class="modal-error" id="modal-error"></div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="admin_form_username">ユーザー名</label>
+        <input type="text" class="form-input" id="m-username" placeholder="半角英数字" data-i18n-placeholder="admin_form_username_ph" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="admin_form_display">表示名</label>
+        <input type="text" class="form-input" id="m-display" placeholder="例：山田 太郎" data-i18n-placeholder="admin_form_display_ph" />
+      </div>
+      <div class="form-group" id="m-pw-group">
+        <label class="form-label" id="m-pw-label" data-i18n="admin_form_password">パスワード</label>
+        <input type="password" class="form-input" id="m-password" placeholder="8文字以上・大小英数字を含む" data-i18n-placeholder="admin_form_password_ph" />
+        <div style="font-size:12px;color:#94A3B8;margin-top:4px;" id="m-pw-hint" data-i18n="admin_form_password_hint">
+          初回ログイン時にユーザーがパスワード変更を求められます。
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="admin_form_role">ロール</label>
+        <select class="form-input" id="m-role">
+          <option value="company_member" data-i18n="admin_role_member">company_member — 通常利用（PDF解析のみ）</option>
+          <option value="company_owner" id="opt-company-owner" data-i18n="admin_role_owner">company_owner — Company内管理者（自社ユーザー管理）</option>
+          <option value="super_admin" id="opt-super-admin" style="display:none" data-i18n="admin_role_super">super_admin — システム管理者</option>
+          <option value="root_admin" id="opt-root-admin" style="display:none">root_admin — システム最上位</option>
+        </select>
+      </div>
+      <!-- Company 選択（super_admin が他ロール作成時に必須） -->
+      <div class="form-group" id="m-company-group" style="display:none;">
+        <label class="form-label">Company</label>
+        <select class="form-input" id="m-company"></select>
+        <div style="font-size:12px;color:#94A3B8;margin-top:4px;">非 super_admin 角色必须指定所属公司。</div>
+      </div>
+      <!-- Company バッジ（company_owner 用、固定表示） -->
+      <div class="form-group" id="m-company-badge-group" style="display:none;">
+        <label class="form-label">Company</label>
+        <div id="m-company-badge" style="padding:9px 12px;background:#F8FAFC;border:1.5px dashed #E2E8F0;border-radius:8px;font-size:13px;color:#374151;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="admin_form_pages">アクセス可能ページ</label>
+        <div id="m-pages" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" value="jusetsu" checked style="width:16px;height:16px;accent-color:#2563EB;" />
+            <span data-i18n="admin_page_jusetsu">重要事項説明書</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" value="seisansho" checked style="width:16px;height:16px;accent-color:#2563EB;" />
+            <span data-i18n="admin_page_seisansho">精算書</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" value="seikyusho" checked style="width:16px;height:16px;accent-color:#2563EB;" />
+            <span data-i18n="admin_page_seikyusho">請求書</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" value="beta" checked style="width:16px;height:16px;accent-color:#2563EB;" />
+            <span data-i18n="admin_page_beta">Beta 機能</span>
+          </label>
+        </div>
+        <div style="font-size:12px;color:#94A3B8;margin-top:6px;" data-i18n="admin_pages_hint">
+          チェックを外したページにはアクセスできなくなります。
+        </div>
+      </div>
+      <div class="form-group" id="m-active-group" style="display:none">
+        <label class="form-label" data-i18n="admin_form_status">ステータス</label>
+        <select class="form-input" id="m-active">
+          <option value="true" data-i18n="admin_status_active">有効</option>
+          <option value="false" data-i18n="admin_status_inactive">無効</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-sm outline" id="modal-cancel" data-i18n="admin_modal_cancel">キャンセル</button>
+        <button class="btn-sm" id="modal-save" data-i18n="admin_modal_save">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 归属变更 模态框（super_admin 专用） ── -->
+  <div class="modal-overlay" id="transfer-modal">
+    <div class="modal">
+      <h2 class="modal-title" id="transfer-modal-title">所属変更</h2>
+      <div class="modal-error" id="transfer-modal-error"></div>
+
+      <div class="form-group">
+        <label class="form-label">現在の所属</label>
+        <div id="transfer-current-company"
+             style="padding:9px 12px;background:#F8FAFC;border:1.5px dashed #E2E8F0;border-radius:8px;font-size:13px;color:#374151;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">新しい所属</label>
+        <select class="form-input" id="transfer-company-select"></select>
+        <div style="font-size:12px;color:#94A3B8;margin-top:4px;">
+          過去の処理履歴は元 Company に残り、移動後の新規ジョブから新 Company の集計に加算されます。
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-sm outline" id="transfer-modal-cancel">キャンセル</button>
+        <button class="btn-sm" id="transfer-modal-save">変更</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 提示 ── -->
+  <div id="toast"
+       style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+              background:#1E293B;color:#fff;padding:10px 18px;border-radius:8px;
+              font-size:13px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+  </div>
+
+  <script src="/static/i18n.js?v=5"></script>
+  <script>
+    // ── 多语言: 初始应用 + 切换按钮 ──────────────────────────────────────────
+    applyI18n();
+    document.getElementById('lang-toggle').addEventListener('click', function () {
+      switchLang();
+      // 重新渲染动态内容以反映语言切换
+      renderUsers();
+      _populateUserFilter();
+      // 同时重新加载当前标签页数据
+      var activeTab = document.querySelector('.tab.active');
+      if (activeTab && activeTab.dataset.tab === 'logs') loadLogs();
+      if (activeTab && activeTab.dataset.tab === 'usage') _renderUsageSummary();
+      updateMonthLabel();
+    });
+
+    // ── 认证检查 ──────────────────────────────────────────────────────────
+    var token = sessionStorage.getItem('access_token');
+    if (!token) { window.location.href = '/login'; }
+
+    function authHeaders() {
+      return { 'Authorization': 'Bearer ' + sessionStorage.getItem('access_token'), 'Content-Type': 'application/json' };
+    }
+
+    async function fetchWithAuth(url, options) {
+      options = Object.assign({}, options || {});
+      options.headers = Object.assign(
+        { 'Authorization': 'Bearer ' + sessionStorage.getItem('access_token') },
+        options.headers || {}
+      );
+      var resp = await fetch(url, options);
+      if (resp.status === 401) {
+        var refreshResp = await fetch('/auth/refresh', { method: 'POST' });
+        if (!refreshResp.ok) {
+          sessionStorage.removeItem('access_token');
+          window.location.href = '/login';
+          return resp;
+        }
+        var refreshData = await refreshResp.json();
+        sessionStorage.setItem('access_token', refreshData.access_token);
+        options.headers['Authorization'] = 'Bearer ' + refreshData.access_token;
+        resp = await fetch(url, options);
+      }
+      return resp;
+    }
+
+    var currentUserRole = 'super_admin';
+    var currentUserCompanyId = null;
+    var currentUserCompanyName = null;
+    var usersList = [];
+    var companiesList = [];  // super_admin 用：Company select の選択肢
+    var currentStatusFilter = 'all';
+
+    async function initPage() {
+      try {
+        var resp = await fetch('/auth/me', { headers: authHeaders() });
+        if (resp.status === 401) { window.location.href = '/login'; return; }
+        if (resp.ok) {
+          var me = await resp.json();
+          currentUserRole = me.role;
+          currentUserCompanyId = me.company_id || null;
+          if (me.must_change_password) { window.location.href = '/change-password'; return; }
+        }
+      } catch (e) {
+        window.location.href = '/login';
+        return;
+      }
+      if (currentUserRole === 'root_admin') {
+        document.getElementById('opt-super-admin').style.display = '';
+        document.getElementById('opt-root-admin').style.display = '';
+        document.getElementById('tab-companies-link').style.display = '';
+        // Company 一覧を取得（モーダルの select 用）
+        try {
+          var cresp = await fetchWithAuth('/api/admin/companies');
+          if (cresp.ok) companiesList = await cresp.json();
+        } catch (e) { /* ignore */ }
+      } else if (currentUserRole === 'super_admin') {
+        document.getElementById('opt-super-admin').style.display = '';
+        document.getElementById('tab-companies-link').style.display = '';
+        // Company 一覧を取得（モーダルの select 用）
+        try {
+          var cresp = await fetchWithAuth('/api/admin/companies');
+          if (cresp.ok) companiesList = await cresp.json();
+        } catch (e) { /* ignore */ }
+      } else if (currentUserRole === 'company_owner') {
+        // company_owner 仅获取本公司名称用于徽章显示
+        try {
+          var ur = await fetchWithAuth('/api/me/company-usage');
+          if (ur.ok) {
+            var ud = await ur.json();
+            currentUserCompanyName = ud.company_name;
+          }
+        } catch (e) { /* ignore */ }
+        // company_owner 不能创建 company_owner 角色 → 隐藏
+        document.getElementById('opt-company-owner').style.display = 'none';
+      }
+      loadUsers();
+    }
+
+    // ── 标签切换 ─────────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-bar-sub .tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tab-bar-sub .tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        var panelId = 'panel-' + tab.dataset.tab;
+        document.getElementById(panelId).classList.add('active');
+        if (tab.dataset.tab === 'logs') {
+          _populateUserFilter();
+          loadLogs();
+        }
+        if (tab.dataset.tab === 'usage') loadUsage();
+      });
+    });
+
+    // ── 用户列表 ──────────────────────────────────────────────────────────
+    function fmt(dateStr) {
+      var locale = (typeof currentLang !== 'undefined' && currentLang === 'zh') ? 'zh-CN' : 'ja-JP';
+      return new Date(dateStr).toLocaleDateString(locale, { year:'numeric', month:'2-digit', day:'2-digit' });
+    }
+    function fmtDateTime(dateStr) {
+      var locale = (typeof currentLang !== 'undefined' && currentLang === 'zh') ? 'zh-CN' : 'ja-JP';
+      return new Date(dateStr).toLocaleString(locale);
+    }
+
+    async function loadUsers() {
+      var tbody = document.getElementById('users-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="8">' + t('admin_loading') + '</td></tr>';
+      try {
+        var resp = await fetchWithAuth('/api/admin/users');
+        if (resp.status === 403) { alert(t('admin_msg_need_admin')); window.location.href = '/'; return; }
+        if (!resp.ok) throw new Error('fetch failed');
+        usersList = await resp.json();
+        renderUsers();
+      } catch (e) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8">' + t('admin_msg_load_error') + '</td></tr>';
+      }
+    }
+
+    function renderUsers() {
+      var tbody = document.getElementById('users-tbody');
+      var countEl = document.getElementById('users-filter-count');
+      var filtered = usersList.filter(function (u) {
+        if (currentStatusFilter === 'active') return u.is_active;
+        if (currentStatusFilter === 'inactive') return !u.is_active;
+        return true;
+      });
+      if (countEl) {
+        countEl.textContent = filtered.length + ' / ' + usersList.length + t('admin_count_suffix');
+      }
+      var _pageLabels = {
+        jusetsu: t('admin_page_short_jusetsu'),
+        seisansho: t('admin_page_short_seisansho'),
+        seikyusho: t('admin_page_short_seikyusho'),
+        beta: t('admin_page_short_beta')
+      };
+      var _allPages = ['jusetsu', 'seisansho', 'seikyusho', 'beta'];
+
+      if (!filtered.length) {
+        var msg = !usersList.length
+          ? t('admin_msg_no_users')
+          : t('admin_msg_no_match');
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8">' + msg + '</td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(function (u) {
+        var pages = u.allowed_pages || [];
+        var pagesHtml = _allPages.map(function (p) {
+          var active = pages.indexOf(p) !== -1;
+          return '<span class="badge ' + (active ? 'badge-active' : 'badge-inactive') + '" style="font-size:11px;margin:1px 2px;">' + _pageLabels[p] + '</span>';
+        }).join('');
+        var companyCell = u.company_name
+          ? esc(u.company_name)
+          : '<span style="color:#94A3B8;">-</span>';
+        return '<tr>' +
+          '<td><strong>' + esc(u.username) + '</strong></td>' +
+          '<td>' + esc(u.display_name) + '</td>' +
+          '<td><span class="badge badge-' + u.role + '">' + u.role + '</span></td>' +
+          '<td style="font-size:12px;">' + companyCell + '</td>' +
+          '<td>' + pagesHtml + '</td>' +
+          '<td>' +
+            (u.is_active
+              ? '<span class="badge badge-active">' + t('admin_status_active') + '</span>'
+              : '<span class="badge badge-inactive">' + t('admin_status_inactive') + '</span>') +
+            (u.must_change_password ? ' <span class="badge badge-warn" title="' + t('admin_must_change_pw_title') + '">' + t('admin_must_change_pw') + '</span>' : '') +
+          '</td>' +
+          '<td>' + fmt(u.created_at) + '</td>' +
+          '<td><div class="action-btns">' +
+            '<button class="btn-sm outline" onclick="openEdit(' + JSON.stringify(u).replace(/"/g,'&quot;') + ')">' + t('admin_btn_edit') + '</button>' +
+            '<button class="btn-sm outline" onclick="resetPw(' + u.id + ',\'' + esc(u.username) + '\')">' + t('admin_btn_reset_pw') + '</button>' +
+            (((currentUserRole === 'super_admin' || currentUserRole === 'root_admin')
+              && u.role !== 'super_admin' && u.role !== 'root_admin')
+              ? '<button class="btn-sm outline" onclick="openTransfer(' + JSON.stringify(u).replace(/"/g,'&quot;') + ')">' + t('admin_btn_transfer') + '</button>'
+              : '') +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    document.querySelectorAll('#users-status-filter .filter-segment-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('#users-status-filter .filter-segment-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        currentStatusFilter = btn.dataset.status;
+        renderUsers();
+      });
+    });
+
+    // ── 审计日志 ──────────────────────────────────────────────────────────────
+    function _populateUserFilter() {
+      var sel = document.getElementById('log-user-filter');
+      var current = sel.value;
+      sel.innerHTML = '<option value="">' + t('admin_log_filter_all') + '</option>';
+      usersList.forEach(function (u) {
+        var opt = document.createElement('option');
+        opt.value = u.username;
+        opt.textContent = u.username + (u.display_name ? ' (' + u.display_name + ')' : '');
+        if (u.username === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    document.getElementById('log-user-filter').addEventListener('change', loadLogs);
+
+    async function loadLogs() {
+      var filterUser = document.getElementById('log-user-filter').value;
+      var url = '/api/admin/audit-logs?limit=200';
+      if (filterUser) url += '&username=' + encodeURIComponent(filterUser);
+      var tbody = document.getElementById('logs-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="6">' + t('admin_loading') + '</td></tr>';
+      try {
+        var resp = await fetchWithAuth(url);
+        if (!resp.ok) throw new Error();
+        var logs = await resp.json();
+        if (!logs.length) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="5">' + t('admin_msg_no_logs') + '</td></tr>';
+          return;
+        }
+        tbody.innerHTML = logs.map(function (l) {
+          var dt = fmtDateTime(l.created_at);
+          var cls = 'action-' + l.action;
+          var detail = l.detail || '';
+          return '<tr>' +
+            '<td style="white-space:nowrap;font-size:12px;color:#64748B;">' + dt + '</td>' +
+            '<td><strong>' + esc(l.username) + '</strong></td>' +
+            '<td><span class="' + cls + '">' + esc(l.action) + '</span></td>' +
+            '<td style="font-family:monospace;font-size:12px;">' + esc(l.ip_address || '-') + '</td>' +
+            '<td style="font-size:12px;color:#64748B;">' + esc(detail) + '</td>' +
+          '</tr>';
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">' + t('admin_msg_log_error') + '</td></tr>';
+      }
+    }
+
+    // ── 模态框 ──────────────────────────────────────────────────────────────
+    var editingUserId = null;
+
+    function _setPageCheckboxes(pages) {
+      var allPages = ['jusetsu', 'seisansho', 'seikyusho', 'beta'];
+      document.querySelectorAll('#m-pages input[type="checkbox"]').forEach(function (cb) {
+        cb.checked = pages ? pages.indexOf(cb.value) !== -1 : true;
+      });
+    }
+
+    function _getPageCheckboxes() {
+      var pages = [];
+      document.querySelectorAll('#m-pages input[type="checkbox"]').forEach(function (cb) {
+        if (cb.checked) pages.push(cb.value);
+      });
+      return pages;
+    }
+
+    function _populateCompanySelect(selectedId) {
+      var sel = document.getElementById('m-company');
+      sel.innerHTML = '<option value="">-- 请选择 --</option>' +
+        companiesList.map(function (c) {
+          var sel2 = (selectedId && c.id === selectedId) ? ' selected' : '';
+          return '<option value="' + c.id + '"' + sel2 + '>' + esc(c.name) + '</option>';
+        }).join('');
+    }
+
+    function _findCompanyName(companyId) {
+      for (var i = 0; i < companiesList.length; i++) {
+        if (companiesList[i].id === companyId) return companiesList[i].name;
+      }
+      return null;
+    }
+
+    /**
+     * ロール選択 / 操作者ロール / モード（create/edit）に応じて
+     * Company 関連フィールドの表示を切り替える。
+     */
+    function _updateCompanyVisibility(mode, user) {
+      var role = document.getElementById('m-role').value;
+      var selectGroup = document.getElementById('m-company-group');
+      var badgeGroup  = document.getElementById('m-company-badge-group');
+      var badgeEl     = document.getElementById('m-company-badge');
+
+      selectGroup.style.display = 'none';
+      badgeGroup.style.display = 'none';
+
+      if (mode === 'edit') {
+        // 编辑时以只读徽章显示
+        var cname = (user && user.company_name) ? user.company_name : null;
+        if (cname) {
+          badgeEl.textContent = cname + '（不可更改）';
+          badgeGroup.style.display = '';
+        }
+        return;
+      }
+
+      // create モード
+      if (currentUserRole === 'super_admin' || currentUserRole === 'root_admin') {
+        if (role === 'super_admin' || role === 'root_admin') {
+          // company_id は不要
+          return;
+        }
+        _populateCompanySelect(null);
+        selectGroup.style.display = '';
+      } else if (currentUserRole === 'company_owner') {
+        // company_owner: 本公司固定徽章
+        badgeEl.textContent = currentUserCompanyName || '(本公司)';
+        badgeGroup.style.display = '';
+      }
+    }
+
+    function openCreate() {
+      editingUserId = null;
+      document.getElementById('modal-title').textContent = t('admin_modal_add_title');
+      document.getElementById('m-username').value = '';
+      document.getElementById('m-username').disabled = false;
+      document.getElementById('m-display').value = '';
+      document.getElementById('m-password').value = '';
+      document.getElementById('m-pw-label').textContent = t('admin_form_password');
+      document.getElementById('m-pw-hint').textContent = t('admin_form_password_hint');
+      document.getElementById('m-pw-group').style.display = '';
+      document.getElementById('m-active-group').style.display = 'none';
+      document.getElementById('m-role').value = 'company_member';
+      _setPageCheckboxes(null); // 全チェック
+      document.getElementById('modal-error').style.display = 'none';
+      _updateCompanyVisibility('create', null);
+      document.getElementById('user-modal').classList.add('open');
+    }
+
+    function openEdit(user) {
+      editingUserId = user.id;
+      document.getElementById('modal-title').textContent = t('admin_modal_edit_title');
+      document.getElementById('m-username').value = user.username;
+      document.getElementById('m-username').disabled = true;
+      document.getElementById('m-display').value = user.display_name;
+      document.getElementById('m-password').value = '';
+      document.getElementById('m-pw-label').textContent = t('admin_form_password_new');
+      document.getElementById('m-pw-hint').textContent = t('admin_form_password_hint_edit');
+      document.getElementById('m-pw-group').style.display = '';
+      document.getElementById('m-active-group').style.display = '';
+      document.getElementById('m-active').value = user.is_active ? 'true' : 'false';
+      document.getElementById('m-role').value = user.role;
+      _setPageCheckboxes(user.allowed_pages);
+      document.getElementById('modal-error').style.display = 'none';
+      // 编辑时显示 Company。若 user.company_name 不存在，则从 companiesList 反向查找
+      if (!user.company_name && user.company_id) {
+        user = Object.assign({}, user, { company_name: _findCompanyName(user.company_id) });
+      }
+      _updateCompanyVisibility('edit', user);
+      document.getElementById('user-modal').classList.add('open');
+    }
+
+    // 角色变更时切换 Company 字段显示（仅创建模式）
+    document.getElementById('m-role').addEventListener('change', function () {
+      if (editingUserId === null) _updateCompanyVisibility('create', null);
+    });
+
+    async function resetPw(userId, username) {
+      var pw = prompt(t('admin_msg_pw_reset_prompt_a') + username + t('admin_msg_pw_reset_prompt_b'));
+      if (!pw) return;
+      try {
+        var resp = await fetchWithAuth('/api/admin/users/' + userId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw }),
+        });
+        var data = await resp.json();
+        if (!resp.ok) { alert(data.detail || t('admin_msg_err_generic')); return; }
+        alert(t('admin_msg_pw_reset_ok'));
+      } catch (e) { alert(t('admin_msg_err_network_short')); }
+    }
+
+    document.getElementById('btn-new-user').addEventListener('click', openCreate);
+    document.getElementById('modal-cancel').addEventListener('click', function () {
+      document.getElementById('user-modal').classList.remove('open');
+    });
+
+    document.getElementById('modal-save').addEventListener('click', async function () {
+      var errEl = document.getElementById('modal-error');
+      errEl.style.display = 'none';
+
+      var display = document.getElementById('m-display').value.trim();
+      var password = document.getElementById('m-password').value;
+      var role = document.getElementById('m-role').value;
+
+      if (!display) { errEl.textContent = t('admin_msg_err_display'); errEl.style.display = 'block'; return; }
+
+      try {
+        var resp, data;
+        if (!editingUserId) {
+          // 新規作成
+          var username = document.getElementById('m-username').value.trim();
+          if (!username) { errEl.textContent = t('admin_msg_err_username'); errEl.style.display = 'block'; return; }
+          if (!password) { errEl.textContent = t('admin_msg_err_password'); errEl.style.display = 'block'; return; }
+          // 组装 company_id（仅 super_admin 创建非 super_admin 用户时必须）
+          var companyIdVal = null;
+          if ((currentUserRole === 'super_admin' || currentUserRole === 'root_admin')
+              && role !== 'super_admin' && role !== 'root_admin') {
+            var sel = document.getElementById('m-company');
+            var raw = sel.value;
+            if (!raw) {
+              errEl.textContent = t('admin_msg_err_company');
+              errEl.style.display = 'block';
+              return;
+            }
+            companyIdVal = parseInt(raw, 10);
+          }
+          var createBody = {
+            username: username,
+            display_name: display,
+            password: password,
+            role: role,
+            allowed_pages: _getPageCheckboxes()
+          };
+          if (companyIdVal !== null) createBody.company_id = companyIdVal;
+          resp = await fetchWithAuth('/api/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(createBody),
+          });
+        } else {
+          // 更新
+          var payload = { display_name: display, role: role, allowed_pages: _getPageCheckboxes() };
+          payload.is_active = document.getElementById('m-active').value === 'true';
+          if (password) payload.password = password;
+          resp = await fetchWithAuth('/api/admin/users/' + editingUserId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        data = await resp.json();
+        if (!resp.ok) { errEl.textContent = data.detail || t('admin_msg_err_generic'); errEl.style.display = 'block'; return; }
+
+        document.getElementById('user-modal').classList.remove('open');
+        loadUsers();
+
+      } catch (e) {
+        errEl.textContent = t('admin_msg_err_network');
+        errEl.style.display = 'block';
+      }
+    });
+
+    // 点击模态框外部关闭
+    document.getElementById('user-modal').addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+
+    // ── 使用情况 ──────────────────────────────────────────────────────────────
+    var usageYear  = new Date().getFullYear();
+    var usageMonth = new Date().getMonth() + 1;
+    var usageSummaryData = [];
+
+    function updateMonthLabel() {
+      document.getElementById('usage-month-label').textContent = usageYear + t('admin_year_suffix') + usageMonth + t('admin_month_suffix');
+    }
+    updateMonthLabel();
+
+    document.getElementById('usage-prev').addEventListener('click', function () {
+      usageMonth--;
+      if (usageMonth < 1) { usageMonth = 12; usageYear--; }
+      updateMonthLabel(); loadUsage();
+    });
+    document.getElementById('usage-next').addEventListener('click', function () {
+      usageMonth++;
+      if (usageMonth > 12) { usageMonth = 1; usageYear++; }
+      updateMonthLabel(); loadUsage();
+    });
+
+    async function loadUsage() {
+      var tbody = document.getElementById('usage-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="6">' + t('admin_loading') + '</td></tr>';
+      try {
+        var resp = await fetchWithAuth('/api/admin/usage/summary?year=' + usageYear + '&month=' + usageMonth);
+        if (!resp.ok) throw new Error();
+        usageSummaryData = await resp.json();
+        _renderUsageSummary();
+      } catch (e) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">' + t('admin_msg_log_error') + '</td></tr>';
+      }
+    }
+
+    function _renderUsageSummary() {
+      var tbody = document.getElementById('usage-tbody');
+      if (!usageSummaryData.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">' + t('admin_usage_no_data') + '</td></tr>';
+        return;
+      }
+      var totalJobs  = usageSummaryData.reduce(function (s, r) { return s + r.job_count; }, 0);
+      var totalPages = usageSummaryData.reduce(function (s, r) { return s + r.total_pages; }, 0);
+
+      var rows = usageSummaryData.map(function (r) {
+        var uid = esc(r.username);
+        return '<tr>' +
+          '<td><strong>' + uid + '</strong></td>' +
+          '<td>' + r.job_count + t('admin_usage_unit_jobs') + '</td>' +
+          '<td>' + r.total_pages + t('admin_usage_unit_pages') + '</td>' +
+          '<td>' + r.avg_accuracy + '%</td>' +
+          '<td style="font-size:12px;color:#64748B;">' + (r.last_used ? fmt(r.last_used) : '-') + '</td>' +
+          '<td><button class="btn-sm outline" onclick="toggleDetail(\'' + uid + '\')">' + t('admin_usage_detail_btn') + '</button></td>' +
+        '</tr>' +
+        '<tr id="drow-' + uid + '" style="display:none;"><td colspan="6" class="detail-cell">' +
+          '<div class="detail-inner" id="dcontent-' + uid + '">' + t('admin_loading') + '</div>' +
+        '</td></tr>';
+      }).join('');
+
+      tbody.innerHTML = rows +
+        '<tr class="usage-total-row">' +
+          '<td>' + t('admin_usage_total') + '</td><td>' + totalJobs + t('admin_usage_unit_jobs') + '</td><td>' + totalPages + t('admin_usage_unit_pages') + '</td>' +
+          '<td>-</td><td>-</td><td></td>' +
+        '</tr>';
+    }
+
+    async function toggleDetail(username) {
+      var row     = document.getElementById('drow-' + username);
+      var content = document.getElementById('dcontent-' + username);
+      if (!row) return;
+      if (row.style.display !== 'none') { row.style.display = 'none'; return; }
+      row.style.display = '';
+      content.innerHTML = t('admin_loading');
+      try {
+        var resp = await fetchWithAuth(
+          '/api/admin/usage/detail?username=' + encodeURIComponent(username) +
+          '&year=' + usageYear + '&month=' + usageMonth
+        );
+        if (!resp.ok) throw new Error();
+        var jobs = await resp.json();
+        if (!jobs.length) { content.innerHTML = '<p style="padding:10px;color:#94A3B8;font-size:13px;">' + t('admin_usage_no_detail') + '</p>'; return; }
+        content.innerHTML =
+          '<table class="extracted-table" style="margin:0;">' +
+          '<thead><tr><th>' + t('admin_th_log_datetime') + '</th><th>' + t('admin_th_detail_filename') + '</th><th>' + t('admin_th_detail_fileid') + '</th><th>' + t('admin_th_detail_pages') + '</th><th>' + t('admin_th_detail_accuracy') + '</th><th>' + t('admin_th_detail_type') + '</th></tr></thead>' +
+          '<tbody>' + jobs.map(function (j) {
+            return '<tr>' +
+              '<td style="font-size:12px;white-space:nowrap;">' + fmtDateTime(j.created_at) + '</td>' +
+              '<td style="font-size:12px;">' + esc(j.filename) + '</td>' +
+              '<td style="font-family:monospace;font-size:11px;color:#3B82F6;">' + esc(j.file_id || '-') + '</td>' +
+              '<td>' + j.page_count + '</td>' +
+              '<td>' + j.accuracy + '%</td>' +
+              '<td><span class="badge badge-' + (j.source_type === 'beta' ? 'operator' : 'admin') + '">' + esc(j.source_type) + '</span></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      } catch (e) {
+        content.innerHTML = '<p style="padding:10px;color:#DC2626;font-size:13px;">' + t('admin_msg_log_error') + '</p>';
+      }
+    }
+
+    document.getElementById('export-csv-btn').addEventListener('click', function () {
+      if (!usageSummaryData.length) return;
+      var header = [t('admin_th_username'), t('admin_csv_col_jobs'), t('admin_csv_col_pages'), t('admin_csv_col_accuracy'), t('admin_csv_col_last')];
+      var rows = usageSummaryData.map(function (r) {
+        return [r.username, r.job_count, r.total_pages, r.avg_accuracy,
+          r.last_used ? fmt(r.last_used) : '-'].join(',');
+      });
+      var totalJobs  = usageSummaryData.reduce(function (s, r) { return s + r.job_count; }, 0);
+      var totalPages = usageSummaryData.reduce(function (s, r) { return s + r.total_pages; }, 0);
+      rows.push([t('admin_usage_total'), totalJobs, totalPages, '-', '-'].join(','));
+      var csv = '\uFEFF' + header.join(',') + '\n' + rows.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = usageYear + '_' + String(usageMonth).padStart(2, '0') + '_usage.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // ── 导航 ────────────────────────────────────────────────────────
+    document.getElementById('nav-avatar').addEventListener('click', function () {
+      window.location.href = '/me';
+    });
+
+    // ── 提示 ──────────────────────────────────────────────────────────────
+    var _toastTimer = null;
+    function showToast(message, kind) {
+      var el = document.getElementById('toast');
+      el.textContent = message;
+      el.style.background = (kind === 'error') ? '#DC2626' : '#1E293B';
+      el.style.display = 'block';
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function () { el.style.display = 'none'; }, 3000);
+    }
+
+    // ── 变更归属模态框（super_admin 专用） ──────────────────────────────────
+    var transferringUserId = null;
+
+    function openTransfer(user) {
+      transferringUserId = user.id;
+      document.getElementById('transfer-modal-title').textContent =
+        '变更归属: ' + user.username;
+      var currentName = user.company_name || _findCompanyName(user.company_id) || '(未设置)';
+      document.getElementById('transfer-current-company').innerHTML =
+        '<span class="badge badge-admin">' + esc(currentName) + '</span>';
+      // 填充目标公司下拉框
+      var sel = document.getElementById('transfer-company-select');
+      sel.innerHTML = companiesList.map(function (c) {
+        var disabled = (c.id === user.company_id) ? ' disabled' : '';
+        var label = c.name + (c.is_active ? '' : '（已停用）');
+        return '<option value="' + c.id + '"' + disabled + '>' + esc(label) + '</option>';
+      }).join('');
+      document.getElementById('transfer-modal-error').style.display = 'none';
+      document.getElementById('transfer-modal').classList.add('open');
+    }
+
+    document.getElementById('transfer-modal-cancel').addEventListener('click', function () {
+      document.getElementById('transfer-modal').classList.remove('open');
+    });
+    document.getElementById('transfer-modal').addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+
+    document.getElementById('transfer-modal-save').addEventListener('click', async function () {
+      var errEl = document.getElementById('transfer-modal-error');
+      errEl.style.display = 'none';
+      var sel = document.getElementById('transfer-company-select');
+      var raw = sel.value;
+      if (!raw) {
+        errEl.textContent = '请选择目标公司。';
+        errEl.style.display = 'block';
+        return;
+      }
+      var companyId = parseInt(raw, 10);
+      try {
+        var resp = await fetchWithAuth(
+          '/api/admin/users/' + transferringUserId + '/transfer',
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_id: companyId }),
+          }
+        );
+        var data = await resp.json();
+        if (!resp.ok) {
+          var msg = data.detail || '发生错误。';
+          errEl.textContent = msg;
+          errEl.style.display = 'block';
+          showToast(msg, 'error');
+          return;
+        }
+        document.getElementById('transfer-modal').classList.remove('open');
+        showToast('归属已变更。');
+        loadUsers();
+      } catch (e) {
+        errEl.textContent = '网络错误。';
+        errEl.style.display = 'block';
+      }
+    });
+
+    // XSS 防护
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── 初始化加载 ────────────────────────────────────────────────────────────
+    initPage();
+  </script>
+</body>
+</html>

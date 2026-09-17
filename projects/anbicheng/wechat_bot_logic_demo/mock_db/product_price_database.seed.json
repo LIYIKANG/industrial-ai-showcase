@@ -1,0 +1,103 @@
+[
+  {
+    "product_code": "535-10",
+    "product_status": "",
+    "product_image": "",
+    "product_name": "垫圈",
+    "part_no": "LX0107-001-OS",
+    "internal_sku": "LX0107-001-OS",
+    "sku_aliases": [
+      "535-10"
+    ],
+    "material_special": "NBR",
+    "hardness": "50-55°A",
+    "color": "黑色",
+    "tax_excluded_price": null,
+    "tax_included_price": 0.456,
+    "moq": 1000,
+    "moq_text": "1K",
+    "price_tiers": [
+      {
+        "tax_included_price": 0.456,
+        "moq": 1000,
+        "moq_text": "1K"
+      },
+      {
+        "tax_included_price": 0.42,
+        "moq": 10000,
+        "moq_text": "10K"
+      },
+      {
+        "tax_included_price": 0.37,
+        "moq": 20000,
+        "moq_text": "20K"
+      }
+    ]
+  },
+  {
+    "product_code": "535-08",
+    "product_status": "",
+    "product_image": "",
+    "product_name": "Y型垫圈",
+    "part_no": "LX0105-MTP-15-0",
+    "internal_sku": "LX0105-MTP-15-0",
+    "sku_aliases": [
+      "535-08"
+    ],
+    "material_special": "NBR",
+    "hardness": "60±5°A",
+    "color": "黑色",
+    "tax_excluded_price": null,
+    "tax_included_price": 2.28,
+    "moq": 500,
+    "moq_text": "500PCS",
+    "price_tiers": [
+      {
+        "tax_included_price": 2.28,
+        "moq": 500,
+        "moq_text": "500PCS"
+      },
+      {
+        "tax_included_price": 1.85,
+        "moq": 1000,
+        "moq_text": "1000PCS"
+      },
+      {
+        "tax_included_price": 1.6,
+        "moq": 2000,
+        "moq_text": "2000PCS"
+      },
+      {
+        "tax_included_price": 1.2,
+        "moq": 3000,
+        "moq_text": "3000PCS"
+      }
+    ]
+  },
+  {
+    "product_code": "535-21",
+    "product_status": "3合1样模",
+    "product_image": "",
+    "product_name": "Y型垫圈",
+    "part_no": "LX0145-002-0",
+    "internal_sku": "LX0145-002-0535-21",
+    "sku_aliases": [
+      "LX0145-002-0",
+      "535-21"
+    ],
+    "material_special": "NBR",
+    "hardness": "60±5°A",
+    "color": "黑色",
+    "tax_excluded_price": null,
+    "tax_included_price": 1.79,
+    "moq": 1000,
+    "moq_text": "1K",
+    "price_tiers": [
+      {
+        "tax_included_price": 1.79,
+        "moq": 1000,
+        "moq_text": "1K"
+      }
+    ]
+  }
+]

@@ -1,0 +1,39 @@
+# requirements.txt - project dependencies (pinned versions)
+# Requires Python 3.10+.
+# Install: pip install -r requirements.txt
+
+# Web framework
+fastapi==0.135.1
+uvicorn[standard]==0.41.0
+python-multipart==0.0.22
+starlette>=0.46.0,<1.0.0
+
+# AI
+anthropic==0.84.0
+
+# PDF processing
+pymupdf==1.27.2
+pypdf==6.8.0
+Pillow==11.1.0
+
+# Excel / Word
+openpyxl==3.1.5
+python-docx==1.1.2
+
+# Config
+python-dotenv==1.2.2
+jinja2>=3.1.0
+tzdata>=2024.1  # IANA tz data fallback for zoneinfo (required on Windows)
+
+# Payments
+stripe>=11.0.0,<13.0.0
+
+# Auth / Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+passlib[bcrypt]>=1.7.4
+bcrypt==3.2.2
+python-jose[cryptography]>=3.3.0
+
+# Production server (optional in local dev)
+gunicorn>=23.0.0

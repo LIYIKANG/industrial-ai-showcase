@@ -1,0 +1,71 @@
+[project]
+name = "efeso-operations-workbench"
+version = "4.1.0"
+description = "EFESO Operations AI Workbench - local-first ontology and LP/MILP optimization workbench"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "EFESO Consulting" }]
+keywords = ["optimization", "lp", "milp", "ontology", "operations-research"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+    "openai>=1.30.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "networkx>=3.0",
+    "pypdf>=4.0.0",
+    "python-docx>=1.1.0",
+    "python-pptx>=0.6.23",
+    "pulp>=2.7.0",
+    "scipy>=1.11.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*"]
+exclude = ["data*", "outputs*", "frontend*", "tests*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["outputs", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+filterwarnings = [
+    "ignore::DeprecationWarning:pydantic.*",
+]

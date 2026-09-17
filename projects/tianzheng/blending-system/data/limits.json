@@ -1,0 +1,59 @@
+{
+  "limits": {
+    "水分%": {
+      "lo": 8.0,
+      "hi": 14.0,
+      "enabled": true
+    },
+    "灰分%": {
+      "lo": 0.0,
+      "hi": 2.0,
+      "enabled": true
+    },
+    "PH值": {
+      "lo": 4.5,
+      "hi": 6.5,
+      "enabled": true
+    },
+    "勃氏粘度mPa/s": {
+      "lo": 1.5,
+      "hi": 7.0,
+      "enabled": true
+    },
+    "粘度下降%": {
+      "lo": 0.0,
+      "hi": 5.0,
+      "enabled": true
+    },
+    "透过率450%": {
+      "lo": 50.0,
+      "hi": 100.0,
+      "enabled": true
+    },
+    "透过率620%": {
+      "lo": 70.0,
+      "hi": 100.0,
+      "enabled": true
+    },
+    "电导率us/cm": {
+      "lo": 0.0,
+      "hi": 200.0,
+      "enabled": true
+    },
+    "二氧化硫mg/kg": {
+      "lo": 0.0,
+      "hi": 30.0,
+      "enabled": true
+    }
+  },
+  "settings": {
+    "bloom_tolerance": 5.0,
+    "min_take": 20.0,
+    "max_batches": 0,
+    "candidates": 200,
+    "time_limit": 15.0,
+    "worst_grade": "3级",
+    "high_bloom_from": 275.0,
+    "low_bloom_to": 120.0
+  }
+}

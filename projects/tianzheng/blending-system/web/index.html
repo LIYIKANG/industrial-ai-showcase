@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>明胶配料求解系统</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">配</span>
+    <div>
+      <h1>明胶配料求解系统</h1>
+      <p class="sub">按客户规格从半成品库存求解配料方案</p>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="dashboard">数据看板</button>
+    <button class="tab" data-view="inventory">库存数据</button>
+    <button class="tab" data-view="blend">配料求解</button>
+    <button class="tab" data-view="compare">方案对比</button>
+    <button class="tab" data-view="backtest">人工 vs 算法</button>
+    <button class="tab" data-view="params">参数设定</button>
+  </nav>
+  <div class="topbar-right">
+    <span class="health" id="health">连接中…</span>
+    <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ==================== 数据看板 ==================== -->
+  <section class="view active" id="view-dashboard">
+    <div class="stat-row" id="dashKpi"></div>
+
+    <div class="card viz-root">
+      <div class="card-head">
+        <h2>接单能力：目标冻力 → 最大可配产量</h2>
+        <span class="muted" style="font-size:12px">按「只能高不能低」计算</span>
+      </div>
+      <p class="hint">
+        冻力 ≥ 目标的料全部用上会产生<b>冻力盈余</b>，这份盈余能带动多少低于目标的料做压秤，
+        决定了这个牌号最多能配出多少吨。<span class="muted">鼠标悬停查看任意目标值的产能。</span>
+      </p>
+      <div id="chartCapacity"></div>
+    </div>
+
+    <div class="split-2">
+      <div class="card viz-root">
+        <div class="card-head"><h2>库存冻力分布</h2></div>
+        <p class="hint">按<b>吨位</b>而非批数统计 —— 能不能接单取决于有多少料，不是有多少批。</p>
+        <div id="chartHist"></div>
+      </div>
+      <div class="card viz-root">
+        <div class="card-head"><h2>冻力分段构成</h2></div>
+        <p class="hint">界线取自「参数设定」页，配料页的取料偏好按它保护库存。</p>
+        <div id="chartBands"></div>
+      </div>
+    </div>
+
+    <div class="card viz-root">
+      <div class="card-head">
+        <h2>各指标相对规格的余量</h2>
+        <span class="muted" style="font-size:12px">余量越小越容易卡壳，已按最紧的排前</span>
+      </div>
+      <p class="hint">
+        灰色是「参数设定」的规格区间，蓝色是库存实际的 p5~p95 分布。
+        <b>蓝条贴到灰条哪一端，哪一端就是瓶颈。</b>
+      </p>
+      <div id="chartHeadroom"></div>
+    </div>
+
+    <div class="card viz-root">
+      <div class="card-head"><h2>水不溶物等级构成</h2></div>
+      <div id="chartGrades"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 库存数据 ==================== -->
+  <section class="view" id="view-inventory">
+    <div class="stat-row" id="invStats"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>库存明细</h2>
+        <div class="toolbar">
+          <input type="number" id="fBloomMin" class="mini" placeholder="冻力≥">
+          <input type="number" id="fBloomMax" class="mini" placeholder="冻力≤">
+          <input type="number" id="fWeightMin" class="mini" placeholder="重量≥">
+          <select id="fGrade" class="mini">
+            <option value="">水不溶物 全部</option>
+          </select>
+          <input type="text" id="fKeyword" class="mini" placeholder="编号">
+          <button class="btn" id="btnFilter">筛选</button>
+          <button class="btn ghost" id="btnResetFilter">重置</button>
+          <button class="btn ghost" id="btnReload" title="源 Excel 更新后重新导入">重新导入</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="invTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager" id="invPager"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>指标分布</h2></div>
+      <div class="table-wrap">
+        <table class="data-table" id="statTable"><thead></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 配料求解 ==================== -->
+  <section class="view" id="view-blend">
+    <div class="card">
+      <div class="card-head">
+        <h2>配料订单</h2>
+        <div class="toolbar">
+          <button class="btn" id="btnDemoOrder">载入演示订单</button><button class="btn" id="btnAddOrder">+ 添加订单</button>
+          <button class="btn ghost" id="btnClearOrders">清空</button>
+        </div>
+      </div>
+      <p class="hint">
+        每张订单可以指定<b>任意多项目标指标</b> —— 客户规格单上写明的项就勾上填目标值，
+        没写的项交给「参数设定」页的上下限兜底。
+        多张订单会<b>共享同一批库存同时求解</b>，求解器保证不会把同一批料重复分给两张单。
+      </p>
+      <div id="orderList"></div>
+
+      <div class="solve-bar">
+        <div class="solve-opts">
+          <label title="一批料只要用上就必须用完，不留零头。代价是实配总量无法精确命中需求量">
+            <input type="checkbox" id="optWholeBatch"> 整批取料
+          </label>
+          <label id="wrapWeightTol">总量允许偏差 ±<input type="number" id="optWeightTol" class="mini" step="0.5"> %</label>
+          <label id="wrapMinTake">单批最小取用 <input type="number" id="optMinTake" class="mini" step="1"> kg</label>
+          <label>每单最多用 <input type="number" id="optMaxBatches" class="mini" step="1"> 批<span class="muted">（0=不限）</span></label>
+          <label>求解时限 <input type="number" id="optTimeLimit" class="mini" step="1"> 秒</label>
+        </div>
+        <button class="btn primary big" id="btnSolve">生成配料方案</button>
+      </div>
+    </div>
+
+    <div id="solveResult"></div>
+  </section>
+
+  <!-- ==================== 方案对比 ==================== -->
+  <section class="view" id="view-compare">
+    <div class="card">
+      <div class="card-head"><h2>客户需求</h2></div>
+      <p class="hint">
+        所有方案<b>共用同一套约束</b>：同样的加权平均、同样的客户规格、同样的候选池 ——
+        只有目标函数不同，对比才公平。
+        <span class="muted">加权平均本身不是可选项，它是混合的物理事实。</span>
+      </p>
+      <div class="preset-bar">
+        <span class="preset-label">预设场景</span>
+        <div class="preset-row" id="cmpPresets"></div>
+      </div>
+      <div class="order-line" style="padding:12px 18px 0">
+        <label>单号 / 备注 <input type="text" id="cmpName" placeholder="对比订单"></label>
+        <label>需求量 <input type="number" id="cmpWeight" value="3000" step="1" min="1"> kg</label>
+      </div>
+      <div class="target-title" style="padding:0 18px">目标指标（勾选客户规格单上写明的项）</div>
+      <div class="target-grid" id="cmpTargets" style="padding:0 18px 16px"></div>
+    </div>
+
+    <div class="split-2">
+      <div class="card">
+        <div class="card-head"><h2>参赛方案</h2></div>
+        <div class="method-grid" id="cmpMethods"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>冻力定价曲线</h2>
+          <div class="toolbar">
+            <button class="btn" id="btnSavePricing">保存</button>
+            <button class="btn ghost" id="btnResetPricing">恢复默认</button>
+          </div>
+        </div>
+        <p class="hint">
+          ⚠️ 当前是<b>占位价格</b>，不是真实报价 —— 成本对比只有相对意义，
+          外发前请换成实际价格。断点之间线性插值。
+        </p>
+        <div class="price-list" id="pricingRows"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="solve-bar">
+        <div class="solve-opts">
+          <label><input type="checkbox" id="cmpPareto" checked> 计算权衡前沿<span class="muted">（多跑 6 次求解，约 +10 秒）</span></label>
+        </div>
+        <button class="btn primary big" id="btnCompare">开始对比</button>
+      </div>
+    </div>
+
+    <div id="cmpResult"></div>
+  </section>
+
+
+  <!-- ==================== 人工 vs 算法（2025 历史回溯） ==================== -->
+  <section class="view" id="view-backtest">
+    <div class="card">
+      <div class="card-head">
+        <h2>2025 年历史回溯：人工实际配法 vs 算法重配</h2>
+        <div class="toolbar">
+          <div class="seg" id="btMode">
+            <button class="seg-btn active" data-mode="pool">全月统筹</button>
+            <button class="seg-btn" data-mode="strict">严格时序</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">
+        把同一个月里人工<b>实际消耗掉的全部批次</b>汇成一个料池，重新分配给当月的全部配料单 ——
+        <b>投入的料、产出的单、每张单的吨数三者完全不变</b>，只重新决定「哪批料进哪张单」。
+        <span class="muted" id="btNote"></span>
+      </p>
+      <p class="hint">
+        月内总冻力是守恒的：<b>过剩量 − 欠标量 ≡ 常数</b>。算法变不出新的冻力，
+        只能把它从不需要的单搬到需要的单上 —— 所以<b>少欠一分，就少浪费一分</b>。
+        <span class="muted">水分覆盖率 36%、二氧化硫 4.5%，作为约束会凭空造数据，因此不进模型。</span>
+      </p>
+    </div>
+
+    <div class="stat-row" id="btKpi"></div>
+
+    <div class="card viz-root">
+      <div class="card-head"><h2>每张单离客户要求还差多少</h2></div>
+      <p class="hint">
+        一个点一张单，点面积正比于吨位。<b>红色</b> = 该单冻力 / 粘度 / T450 / T620 中有任一项不达标（横轴只画冻力这一项）。
+        <span class="muted">人工那一行散得很开 —— 左边欠标、右边白送；算法那一行贴着 0 线。</span>
+      </p>
+      <div id="btStrip"></div>
+    </div>
+
+    <div class="split-2">
+      <div class="card viz-root">
+        <div class="card-head"><h2>盈余堆在了哪个规格</h2></div>
+        <p class="hint">平均每公斤的冻力余量。<span class="muted">人工在低牌号上白送，在胶囊料上欠着。</span></p>
+        <div id="btGrade"></div>
+      </div>
+      <div class="card viz-root">
+        <div class="card-head"><h2>各月达标单数</h2></div>
+        <p class="hint">灰底 = 当月总单数。</p>
+        <div id="btMonth"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>逐单明细 <span class="muted" id="btCount"></span></h2>
+        <div class="toolbar">
+          <select id="btFilter">
+            <option value="all">全部配料单</option>
+            <option value="std">仅有客户标准的单</option>
+            <option value="fixed">人工不达标 → 算法达标</option>
+            <option value="still">算法仍不达标</option>
+          </select>
+        </div>
+      </div>
+      <div id="btTable"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 参数设定 ==================== -->
+  <section class="view" id="view-params">
+    <div class="card">
+      <div class="card-head">
+        <h2>指标上下限</h2>
+        <div class="toolbar">
+          <button class="btn" id="btnSaveParams">保存</button>
+          <button class="btn ghost" id="btnResetParams">恢复默认</button>
+        </div>
+      </div>
+      <p class="hint">
+        这里设定的是<b>混配成品</b>需要满足的区间，不是单批物料的筛选条件 ——
+        单批超标但能被其他批次拉回来的料仍然可用（这正是配料的价值）。
+        取消勾选则该指标不参与约束。<span class="muted">灰色区间为当前库存的实际范围，目标超出它就无解。</span>
+      </p>
+      <div class="table-wrap">
+        <table class="data-table param-table" id="paramTable">
+          <thead>
+            <tr>
+              <th style="width:44px">启用</th><th>指标</th><th>单位</th>
+              <th style="width:130px">下限</th><th style="width:130px">上限</th>
+              <th>库存实际范围</th><th>说明</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>冻力分段界线</h2></div>
+      <p class="hint">
+        定义什么算<b>高冻力料</b>、什么算<b>低冻力料</b> —— 配料页的「取料偏好」按这个界线保护库存。
+        高冻力料稀缺且能做高牌号产品，配一张低规格的单不该动它。
+        <span class="muted">下方实时显示界线圈住了多少库存，对照分位数选。</span>
+      </p>
+      <div class="settings-grid" id="bandGrid"></div>
+      <div id="bandPreview"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>求解默认设置</h2></div>
+      <div class="settings-grid" id="settingsGrid"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="/static/js/app.js?v=20260917"></script>
+</body>
+</html>

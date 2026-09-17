@@ -1,0 +1,31 @@
+# Web framework + ASGI server
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+pydantic>=2.0.0
+
+# HTTP client (kept for ad-hoc probes / file downloads in the UI)
+requests>=2.31.0
+httpx>=0.25.0
+
+# LLM client (Ollama + DeepSeek via OpenAI-compatible API)
+openai>=1.30.0
+
+# Data + graph
+pandas>=2.0.0
+openpyxl>=3.1.0
+networkx>=3.0
+
+# Document parsing
+pypdf>=4.0.0
+python-docx>=1.1.0
+python-pptx>=0.6.23
+
+# Optimization solvers
+pulp>=2.7.0
+scipy>=1.11.0
+numpy>=1.24.0
+
+# MVP-2 engine: declarative CP-SAT scheduling via PyJobShop (wraps OR-Tools)
+pyjobshop>=0.0.9
+

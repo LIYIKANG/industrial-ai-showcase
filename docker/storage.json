@@ -1,0 +1,12 @@
+[
+  ["runtime", "runtime"],
+  ["projects/solver/data", "solver/data"],
+  ["projects/solver/outputs", "solver/outputs"],
+  ["projects/anbicheng/pdf-analyzer-ai/data", "pdf/data"],
+  ["projects/anbicheng/pdf-analyzer-ai/output", "pdf/output"],
+  ["projects/anbicheng/pdf-analyzer-backup/data", "pdf-backup/data"],
+  ["projects/anbicheng/pdf-analyzer-backup/output", "pdf-backup/output"],
+  ["projects/anbicheng/wechat_bot_logic_demo/mock_db", "bot/mock_db"],
+  ["projects/anbicheng/wechat_bot_logic_demo/logs", "bot/logs"],
+  ["projects/tianzheng/blending-system/data", "blend/data"]
+]

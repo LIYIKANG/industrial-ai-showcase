@@ -1,0 +1,13 @@
+{
+  "excel_template_path": "data/templates/AD相殺書テンプレート.xlsx",
+  "sheet_name": "領収書",
+  "fields": [
+    {"id": "date", "label": "発行日（例: 2025年 2月25日）", "cell": "AK16"},
+    {"id": "recipient_name", "label": "宛名（相手先名称、「宛」の左側に記載された名前）", "cell": "E18"},
+    {"id": "property_name", "label": "物件名（物件名の右側に記載された名称）", "cell": "L28"},
+    {"id": "room_number", "label": "号室（号室の右側に記載された部屋番号）", "cell": "L30"},
+    {"id": "contract_start_date", "label": "契約開始日（契約開始日の右側に記載された日付、例: 2025年3月1日）", "cell": "L32"},
+    {"id": "support_fee", "label": "入居前サポート料（金額、数字のみ、円単位）。「上記入居前サポート料として」の下に記載された金額。", "cell": "L43"},
+    {"id": "tax_amount", "label": "10%対象消費税額（数字のみ、円単位）。「内、10%対象消費税額」の右側に記載された金額。", "cell": "AB46"}
+  ]
+}

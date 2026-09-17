@@ -1,0 +1,39 @@
+# Environment & secrets（.env.example 除外，它是模板，需要提交）
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Database（SQLite ファイルは git 管理外）
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.backup*
+data/*.db.backup_*
+
+# Temporary/output files
+output/
+filled*.xlsx
+房地产PDF抽取_POC示例.xlsx
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Installer & binaries
+*.exe
+
+# Sample/test files
+*.pdf
+*.pptx

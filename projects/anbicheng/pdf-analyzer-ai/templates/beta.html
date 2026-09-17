@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <title>PDF Analyzer Beta - マルチ出力対応</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/style.css?v=3" />
+    <link rel="stylesheet" href="/static/review.css" />
+    <style>
+        /* ── Beta バッジ ── */
+        .beta-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            background: linear-gradient(135deg, #7C3AED, #2563EB);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+        }
+
+        /* ── テンプレートアップロードカード ── */
+        .template-card {
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 16px;
+        }
+        .template-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .template-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+        .template-card-desc {
+            font-size: 13px;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+        .template-optional-badge {
+            margin-left: auto;
+            padding: 2px 10px;
+            background: #F1F5F9;
+            color: #64748B;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 20px;
+        }
+        .template-drop-zone {
+            border: 2px dashed #CBD5E1;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #F8FAFC;
+        }
+        .template-drop-zone:hover,
+        .template-drop-zone.drag-over {
+            border-color: #7C3AED;
+            background: #F5F3FF;
+        }
+        .template-drop-zone-hint {
+            font-size: 13px;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        .template-drop-zone-formats {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .format-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .format-badge.excel { background: #DCFCE7; color: #15803D; }
+        .format-badge.word  { background: #DBEAFE; color: #1D4ED8; }
+
+        /* ── テンプレートアップロード後の選択ファイル表示 ── */
+        .template-selected {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #F5F3FF;
+            border: 1px solid #DDD6FE;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .template-selected-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5B21B6;
+            flex: 1;
+        }
+        .template-remove-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9CA3AF;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+        }
+        .template-remove-btn:hover { color: #EF4444; }
+
+        /* ── AI 解析中インジケーター ── */
+        .template-analyzing {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #EEF2FF;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #4338CA;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #C7D2FE;
+            border-top-color: #4338CA;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── フィールド確認パネル ── */
+        .field-confirm-panel {
+            margin-top: 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .field-confirm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #F8FAFC;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .field-confirm-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+        }
+        .field-confirm-subtitle {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+        .field-confirm-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-xs {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: 1px solid #E2E8F0;
+            background: #fff;
+            color: #374151;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .btn-xs:hover { background: #F1F5F9; }
+        .field-confirm-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .field-confirm-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #F1F5F9;
+            transition: background 0.1s;
+        }
+        .field-confirm-item:last-child { border-bottom: none; }
+        .field-confirm-item:hover { background: #FAFAFA; }
+        .field-confirm-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #7C3AED;
+            flex-shrink: 0;
+        }
+        .field-confirm-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1E293B;
+            min-width: 120px;
+        }
+        .field-confirm-desc {
+            font-size: 12px;
+            color: #6B7280;
+            flex: 1;
+        }
+        .field-required-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #FEF2F2;
+            color: #DC2626;
+            flex-shrink: 0;
+        }
+        .field-optional-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #F1F5F9;
+            color: #64748B;
+            flex-shrink: 0;
+        }
+        .field-confirm-footer {
+            padding: 10px 16px;
+            background: #F8FAFC;
+            border-top: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6B7280;
+        }
+        .field-count-badge {
+            font-weight: 700;
+            color: #7C3AED;
+        }
+
+        /* ── 出力形式インジケーター ── */
+        .output-format-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #374151;
+            padding: 8px 14px;
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+        .output-format-indicator.word {
+            background: #EFF6FF;
+            border-color: #BFDBFE;
+        }
+
+        /* ── 完了画面の出力形式バッジ ── */
+        .result-output-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        .result-output-badge.excel {
+            background: #DCFCE7;
+            color: #15803D;
+        }
+        .result-output-badge.word {
+            background: #DBEAFE;
+            color: #1D4ED8;
+        }
+
+        /* ── ダウンロードボタン（Word 用） ── */
+        .btn-download-word {
+            background: linear-gradient(135deg, #1D4ED8, #2563EB);
+        }
+
+        /* ── モード切替タブ ── */
+        .mode-tabs {
+            display: flex;
+            gap: 0;
+            background: #F1F5F9;
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 16px;
+        }
+        .mode-tab {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-tab.active {
+            background: #fff;
+            color: #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* ── 抽出設定モーダル ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.25s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0F172A;
+            flex: 1;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9CA3AF;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+        .modal-close-btn:hover { color: #374151; background: #F3F4F6; }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .btn-modal-cancel {
+            padding: 10px 20px;
+            border: 1px solid #D1D5DB;
+            background: #fff;
+            color: #374151;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-modal-cancel:hover { background: #F9FAFB; }
+        .btn-modal-confirm {
+            padding: 10px 24px;
+            border: none;
+            background: linear-gradient(135deg, #7C3AED, #6D28D9);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-modal-confirm:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
+        .btn-modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .extract-mode-tabs {
+            display: flex;
+            gap: 0;
+            background: #F1F5F9;
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 16px;
+        }
+        .extract-mode-tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .extract-mode-tab.active {
+            background: #fff;
+            color: #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .extract-mode-tab:hover:not(.active) {
+            color: #374151;
+        }
+
+        /* キーワード入力エリア */
+        .keyword-input-area {
+            margin-top: 12px;
+        }
+        .keyword-input-area textarea {
+            width: 100%;
+            min-height: 80px;
+            border: 1px solid #D1D5DB;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .keyword-input-area textarea:focus {
+            border-color: #7C3AED;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        .keyword-input-hint {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 6px;
+        }
+        .keyword-examples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .keyword-example-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .keyword-example-chip:hover {
+            background: #EDE9FE;
+            border-color: #C4B5FD;
+            color: #5B21B6;
+        }
+
+        /* AI 自動検出ボタン */
+        .ai-detect-area {
+            margin-top: 12px;
+            text-align: center;
+        }
+        .btn-ai-detect {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #7C3AED, #2563EB);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ai-detect:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        .btn-ai-detect:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .ai-detect-hint {
+            font-size: 12px;
+            color: #9CA3AF;
+            margin-top: 10px;
+        }
+        .keyword-apply-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            background: #7C3AED;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.15s;
+        }
+        .keyword-apply-btn:hover {
+            background: #6D28D9;
+        }
+        .keyword-apply-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="nav-logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="#7C3AED"/>
+                    <path d="M9 8h10l4 4v12a2 2 0 01-2 2H9a2 2 0 01-2V10a2 2 0 012-2z" fill="white" opacity="0.9"/>
+                    <path d="M19 8v4h4" fill="none" stroke="white" stroke-width="1.5"/>
+                    <rect x="10" y="15" width="8" height="1.5" rx="0.75" fill="#7C3AED"/>
+                    <rect x="10" y="19" width="5" height="1.5" rx="0.75" fill="#7C3AED"/>
+                </svg>
+            </div>
+            <span class="nav-title">PDF Analyzer</span>
+            <span class="beta-badge">BETA</span>
+        </div>
+        <div class="nav-right">
+            <button class="btn btn-outline" onclick="window.location.href='/'" style="font-size:12px;padding:6px 12px;" data-i18n="beta_return">
+                通常版に戻る
+            </button>
+            <button class="lang-toggle-btn" id="lang-toggle" title="言語切替">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                <span id="lang-label">中文</span>
+            </button>
+            <span id="nav-username" style="font-size:13px;color:#64748B;margin-right:4px;"></span>
+            <button class="nav-icon-btn" id="admin-btn" title="ユーザー管理" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </button>
+            <button class="nav-icon-btn" id="companies-btn" title="Company管理" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9h.01M9 13h.01M9 17h.01"/></svg>
+            </button>
+            <button class="nav-icon-btn" id="logout-btn" title="ログアウト">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+            <div class="nav-avatar"></div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+
+        <!-- ========== STATE 1: UPLOAD ========== -->
+        <div id="state-upload" class="state-panel active">
+            <div class="page-header">
+                <h1 class="page-title"><span data-i18n="beta_upload_title">ファイルアップロード</span> <span class="beta-badge">BETA</span></h1>
+                <p class="page-desc" data-i18n="beta_upload_desc">PDF・画像から情報を抽出して Excel / Word テンプレートに自動入力します。独自テンプレートのアップロードにも対応。</p>
+            </div>
+
+            <!-- ── ソースファイルカード ── -->
+            <div class="upload-card">
+                <div id="drop-area" class="drop-zone">
+                    <div class="drop-zone-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <circle cx="24" cy="24" r="24" fill="#EEF2FF"/>
+                            <path d="M24 16v16M16 24l8-8 8 8" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="drop-zone-title" data-i18n="drop_title">ここにファイルをドラッグ＆ドロップ</h3>
+                    <p class="drop-zone-hint" data-i18n="beta_drop_hint">PDF・画像対応 &bull; 複数ファイル同時アップロード可</p>
+                    <div class="drop-zone-buttons">
+                        <button class="btn btn-outline" id="browse-btn" data-i18n="browse_btn">ファイルを選択</button>
+                    </div>
+                    <input id="file-input" type="file" accept="application/pdf,image/*" multiple hidden />
+                </div>
+                <div id="selected-files-list" class="selected-files-list" style="display:none"></div>
+
+                <div class="upload-tip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span data-i18n="beta_image_tip">PDF・契約書・物件画像など複数ファイルをまとめてアップロードできます。AIが情報を統合して出力します。</span>
+                </div>
+
+                <div class="upload-footer">
+                    <div class="upload-footer-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                        <span data-i18n="upload_safety">ファイルはAIにより安全に解析され、保存・共有されることはありません</span>
+                    </div>
+                    <button class="btn btn-primary btn-upload" id="upload-btn" disabled style="background:linear-gradient(135deg,#7C3AED,#6D28D9);" data-i18n="start_btn">
+                        解析開始
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── 出力テンプレートカード ── -->
+            <div class="template-card">
+                <div class="template-card-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                    <div>
+                        <div class="template-card-title" data-i18n="beta_tmpl_title">出力テンプレート（任意）</div>
+                        <div class="template-card-desc" data-i18n="beta_tmpl_desc">独自の Excel / Word テンプレートをアップロードすると、そのフォーマットで出力します</div>
+                    </div>
+                    <span class="template-optional-badge" data-i18n="beta_tmpl_optional">省略可</span>
+                </div>
+
+                <!-- テンプレートドロップゾーン -->
+                <div id="tmpl-drop-area" class="template-drop-zone">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="16" fill="#F5F3FF"/>
+                        <path d="M16 10v12M10 16l6-6 6 6" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p style="margin-top:8px;font-size:13px;font-weight:600;color:#374151;" data-i18n="beta_tmpl_drop_text">テンプレートをドラッグ＆ドロップ</p>
+                    <p class="template-drop-zone-hint" data-i18n="beta_tmpl_drop_hint">またはクリックして選択</p>
+                    <div class="template-drop-zone-formats">
+                        <span class="format-badge excel">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#15803D"><rect x="2" y="2" width="20" height="20" rx="3"/></svg>
+                            .xlsx
+                        </span>
+                        <span class="format-badge word">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#1D4ED8"><rect x="2" y="2" width="20" height="20" rx="3"/></svg>
+                            .docx
+                        </span>
+                    </div>
+                    <input id="tmpl-input" type="file" accept=".xlsx,.xls,.docx,.doc" hidden />
+                </div>
+
+                <!-- テンプレート選択済み表示 -->
+                <div id="tmpl-selected" style="display:none">
+                    <div class="template-selected" id="tmpl-selected-info"></div>
+                </div>
+
+                <!-- AI解析中インジケーター -->
+                <div id="tmpl-analyzing" class="template-analyzing" style="display:none">
+                    <div class="spinner-sm"></div>
+                    <span>テンプレートを AI で解析中...</span>
+                </div>
+
+                <!-- フィールド確認パネル -->
+                <div id="field-confirm-panel" class="field-confirm-panel" style="display:none">
+                    <div class="field-confirm-header">
+                        <div>
+                            <div class="field-confirm-title" data-i18n="beta_field_title">AI が検出したフィールド一覧</div>
+                            <div class="field-confirm-subtitle" data-i18n="beta_field_subtitle">チェックを外すと抽出対象から除外されます</div>
+                        </div>
+                        <div class="field-confirm-actions">
+                            <button class="btn-xs" id="check-all-btn" data-i18n="beta_check_all">すべて選択</button>
+                            <button class="btn-xs" id="uncheck-all-btn" data-i18n="beta_uncheck_all">すべて解除</button>
+                        </div>
+                    </div>
+                    <div class="field-confirm-list" id="field-confirm-list"></div>
+                    <div class="field-confirm-footer">
+                        <span><span class="field-count-badge" id="field-selected-count">0</span> 件選択中</span>
+                        <span style="color:#7C3AED;font-weight:600;font-size:12px;">✓ 確認後、「解析開始」をクリック</span>
+                    </div>
+                </div>
+
+                <!-- 出力形式インジケーター -->
+                <div id="output-format-indicator" style="display:none"></div>
+            </div>
+
+        </div>
+
+        <!-- ========== STATE 2: PROCESSING ========== -->
+        <div id="state-processing" class="state-panel">
+            <div class="page-header">
+                <div class="page-header-row">
+                    <div>
+                        <h1 class="page-title" data-i18n="processing_title">ファイル処理中</h1>
+                        <p class="page-file-name" id="processing-filename">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+                            <span id="proc-name">document.pdf</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <div class="progress-header">
+                    <span class="progress-label">現在のステータス</span>
+                </div>
+                <div class="progress-status-row">
+                    <span class="progress-text" id="progress-text">ファイルをアップロード中...</span>
+                    <span class="progress-percent" id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+                </div>
+                <div class="progress-hint" id="progress-hint">残り時間：計算中...</div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-blue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                    </div>
+                    <div class="stat-label">ファイルサイズ</div>
+                    <div class="stat-value" id="stat-size">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-green">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                    </div>
+                    <div class="stat-label">ページ数</div>
+                    <div class="stat-value" id="stat-pages">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-purple">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <div class="stat-label">抽出フィールド</div>
+                    <div class="stat-value" id="stat-fields">--</div>
+                </div>
+            </div>
+
+            <div class="logs-card">
+                <div class="logs-header">
+                    <h3>処理ログ</h3>
+                    <span class="logs-live-badge">LIVE</span>
+                </div>
+                <div class="logs-body" id="logs-body">
+                    <div class="log-empty">処理開始を待機中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== STATE 3: COMPLETE ========== -->
+        <div id="state-complete" class="state-panel">
+            <div class="complete-hero">
+                <div class="complete-check">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="24" fill="#DCFCE7"/>
+                        <circle cx="24" cy="24" r="16" fill="#22C55E"/>
+                        <path d="M16 24l5 5 10-10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1 class="complete-title" data-i18n="complete_title">解析完了</h1>
+                <p class="complete-desc" data-i18n="complete_desc">ファイルはAIエンジンによる解析に成功しました。ダウンロードの準備が整いました</p>
+            </div>
+
+            <div class="result-stats-row">
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <div class="result-stat-label">抽出フィールド</div>
+                    <div class="result-stat-value" id="result-fields">--</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    </div>
+                    <div class="result-stat-label">認識精度</div>
+                    <div class="result-stat-value" id="result-accuracy">--</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <div class="result-stat-label">処理時間</div>
+                    <div class="result-stat-value" id="result-time">--</div>
+                </div>
+            </div>
+
+            <div class="file-info-card">
+                <h3 class="file-info-title">ファイル情報</h3>
+                <div class="file-info-rows">
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                            <span>ファイル名</span>
+                        </span>
+                        <span class="file-info-value" id="result-filename">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                            <span>出力形式</span>
+                        </span>
+                        <span class="file-info-value" id="result-output-format">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span>処理日時</span>
+                        </span>
+                        <span class="file-info-value" id="result-date">--</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span class="file-info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                            <span>ステータス</span>
+                        </span>
+                        <span class="file-info-value status-badge">COMPLETED</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 抽出データテーブル -->
+            <div id="extracted-table-container" class="extracted-table-container" style="display:none"></div>
+
+            <button class="btn btn-primary btn-download" id="download-btn" style="background:linear-gradient(135deg,#7C3AED,#6D28D9);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                <span id="download-btn-label">ファイルをダウンロード</span>
+            </button>
+
+            <div class="complete-actions">
+                <button class="btn btn-outline btn-action" id="new-file-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    <span data-i18n="new_file_btn">新しいファイルを解析</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <span>&copy; 2026 PDF Analyzer AI Beta. All rights reserved.</span>
+    </footer>
+
+<!-- ========== 抽出設定モーダル ========== -->
+<div id="extract-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span class="modal-title" data-i18n="extract_modal_title">抽出設定</span>
+            <button class="modal-close-btn" id="modal-close-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <p style="font-size:13px;color:#6B7280;margin-bottom:16px;" data-i18n="extract_modal_desc">
+            PDFからどのような情報を抽出しますか？方法を選択してください。
+        </p>
+
+        <!-- モード切替タブ -->
+        <div class="extract-mode-tabs">
+            <button class="extract-mode-tab active" id="tab-keywords">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span data-i18n="extract_tab_keywords">キーワード指定</span>
+            </button>
+            <button class="extract-mode-tab" id="tab-ai-detect">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <span data-i18n="extract_tab_ai">AI 自動検出</span>
+            </button>
+        </div>
+
+        <!-- キーワード入力モード -->
+        <div id="mode-keywords" class="keyword-input-area">
+            <textarea id="keyword-textarea" data-i18n-placeholder="extract_keyword_placeholder" placeholder="抽出したい情報のキーワードを改行区切りで入力してください。&#10;例:&#10;物件名&#10;所在地&#10;契約日&#10;賃料"></textarea>
+            <div class="keyword-input-hint" data-i18n="extract_keyword_hint">改行またはカンマ区切りで複数入力可</div>
+            <div class="keyword-examples">
+                <span class="keyword-example-chip" data-kw="物件名">+ <span data-i18n="extract_chip_bukken">物件名</span></span>
+                <span class="keyword-example-chip" data-kw="所在地">+ <span data-i18n="extract_chip_address">所在地</span></span>
+                <span class="keyword-example-chip" data-kw="契約日">+ <span data-i18n="extract_chip_contract_date">契約日</span></span>
+                <span class="keyword-example-chip" data-kw="賃料">+ <span data-i18n="extract_chip_rent">賃料</span></span>
+                <span class="keyword-example-chip" data-kw="面積">+ <span data-i18n="extract_chip_area">面積</span></span>
+                <span class="keyword-example-chip" data-kw="売主">+ <span data-i18n="extract_chip_seller">売主</span></span>
+                <span class="keyword-example-chip" data-kw="買主">+ <span data-i18n="extract_chip_buyer">買主</span></span>
+            </div>
+        </div>
+
+        <!-- AI 自動検出モード -->
+        <div id="mode-ai-detect" class="ai-detect-area" style="display:none">
+            <p style="font-size:13px;color:#374151;margin-bottom:14px;" data-i18n="extract_ai_desc">
+                アップロードしたPDFをAIが解析し、抽出可能なフィールドを自動で提案します。
+            </p>
+            <button class="btn-ai-detect" id="ai-detect-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <span data-i18n="extract_ai_btn">AI でフィールドを自動検出</span>
+            </button>
+            <div class="ai-detect-hint" data-i18n="extract_ai_hint">最初のファイルを解析してフィールド候補を提案します</div>
+        </div>
+
+        <!-- AI 解析中 -->
+        <div id="pdf-analyzing" class="template-analyzing" style="display:none">
+            <div class="spinner-sm"></div>
+            <span data-i18n="extract_pdf_analyzing">PDF を AI で解析中... フィールド候補を検出しています</span>
+        </div>
+
+        <!-- フィールド確認パネル -->
+        <div id="extract-field-confirm-panel" class="field-confirm-panel" style="display:none">
+            <div class="field-confirm-header">
+                <div>
+                    <div class="field-confirm-title" id="extract-field-title" data-i18n="extract_field_list_title">抽出フィールド一覧</div>
+                    <div class="field-confirm-subtitle" data-i18n="extract_field_list_subtitle">チェックを外すと抽出対象から除外されます</div>
+                </div>
+                <div class="field-confirm-actions">
+                    <button class="btn-xs" id="extract-check-all-btn" data-i18n="extract_check_all">すべて選択</button>
+                    <button class="btn-xs" id="extract-uncheck-all-btn" data-i18n="extract_uncheck_all">すべて解除</button>
+                </div>
+            </div>
+            <div class="field-confirm-list" id="extract-field-confirm-list"></div>
+            <div class="field-confirm-footer">
+                <span><span class="field-count-badge" id="extract-field-selected-count">0</span><span data-i18n="extract_selected_count_suffix"> 件選択中</span></span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-modal-cancel" id="modal-cancel-btn" data-i18n="extract_cancel_btn">キャンセル</button>
+            <button class="btn-modal-confirm" id="modal-confirm-btn" disabled data-i18n="extract_confirm_btn">この設定で解析開始</button>
+        </div>
+    </div>
+</div>
+
+<!-- 依存 JS（auth → utils → app ロジック） -->
+<script src="/static/auth.js"></script>
+<script src="/static/i18n.js?v=5"></script>
+<script src="/static/utils.js"></script>
+<script src="/static/beta-app.js?v=4"></script>
+<script>
+    Auth.requireAuth();
+    Auth.fetchMe().then(function(user) {
+        if (!user) { Auth.clearToken(); window.location.href = '/login'; return; }
+        document.getElementById('nav-username').textContent = user.display_name;
+        if (user.role === 'super_admin' || user.role === 'root_admin' || user.role === 'company_owner') {
+            document.getElementById('admin-btn').style.display = '';
+        }
+        if (user.role === 'super_admin' || user.role === 'root_admin') {
+            document.getElementById('companies-btn').style.display = '';
+        }
+        // ページアクセス制御
+        var pages = user.allowed_pages || [];
+        if (user.role !== 'super_admin' && user.role !== 'root_admin' && pages.indexOf('beta') === -1) {
+            var _pageRoutes = { jusetsu: '/', seisansho: '/seisansho', seikyusho: '/seikyusho', beta: '/beta' };
+            for (var i = 0; i < pages.length; i++) {
+                if (_pageRoutes[pages[i]]) { window.location.href = _pageRoutes[pages[i]]; return; }
+            }
+            alert('アクセス可能なページがありません。管理者にお問い合わせください。');
+            Auth.logout();
+            return;
+        }
+    });
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        if (confirm('ログアウトしますか？')) Auth.logout();
+    });
+    document.getElementById('admin-btn').addEventListener('click', function() {
+        window.location.href = '/admin';
+    });
+    document.getElementById('companies-btn').addEventListener('click', function() {
+        window.location.href = '/admin/companies';
+    });
+
+    // Beta アプリ初期化
+    BetaApp.init();
+</script>
+</body>
+</html>

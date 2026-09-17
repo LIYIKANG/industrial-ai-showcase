@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>客户关键词识别系统</title>
+  <link href="/static/vendor/tabulator.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/customer.css?v=8" />
+</head>
+<body><div style="background:#fff4d6;color:#765323;padding:10px 24px;font:13px system-ui;line-height:1.6" id="showcase-mode">本地演示 · PDF 文字层 + 关键词规则解析（未调用大模型）。点击“载入演示样例 PDF”即可开始；扫描件与复杂版式需配置 AI 服务。</div><script>fetch('/showcase/token').then(r=>r.json()).then(d=>{sessionStorage.setItem('access_token',d.access_token);if(d.mode==='cloud')document.getElementById('showcase-mode').textContent='已启用云端 AI 识别 · 上传文件将交由所配置的模型服务处理';});</script>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/static/assets/logo.png" alt="品牌 Logo" />
+      <div class="brand-text">
+        <strong>客户关键词识别系统</strong>
+        <span>上传解析 / 规则处理 / 校对导出</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="user-chip" id="user-chip">--</span>
+      <button class="icon-button" id="admin-link" type="button" title="用户管理" aria-label="用户管理">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+      <button class="icon-button" id="logout-button" type="button" title="重新进入演示（未提交内容将清除）" aria-label="重新进入演示">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="workspace-header">
+      <div>
+        <p class="eyebrow">业务工作台</p>
+        <h1>客户指定关键词识别</h1>
+      </div>
+      <div class="status-pills">
+        <span id="config-count">配置 --</span>
+        <span id="history-count">最近任务 --</span>
+      </div>
+    </section>
+    <nav class="workspace-tabs" aria-label="工作台视图">
+      <button class="workspace-tab active" id="tab-workbench" type="button">文件识别</button>
+      <button class="workspace-tab" id="tab-database" type="button">数据库</button>
+    </nav>
+
+    <section class="workbench" id="upload-view">
+      <div class="upload-panel">
+        <div class="panel-title-row">
+          <div>
+            <h2>上传文件</h2>
+            <p>上传 PDF 进行字段解析、校对和结果导出。识别能力以顶部模式说明为准。</p>
+          </div>
+          <span class="format-badge">PDF / JPG / PNG / WEBP</span>
+        </div>
+
+        <div class="drop-zone" id="drop-zone" tabindex="0">
+          <input id="file-input" type="file" accept="application/pdf,image/*" multiple hidden />
+          <div class="drop-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16.5V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.5"/></svg>
+          </div>
+          <strong>拖放文件到这里，或点击选择</strong>
+          <span>内容越清晰，识别结果越稳定。</span>
+        </div>
+
+        <button type="button" id="load-demo-pdf" class="secondary-button" style="margin:14px 0">载入演示样例 PDF</button><div id="demo-load-status" style="font-size:12px;color:#66758c;line-height:1.8"></div><div class="file-list" id="file-list" aria-live="polite"></div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="control-block">
+          <label for="config-select">客户关键词配置</label>
+          <select id="config-select"></select>
+          <p id="config-desc">正在读取配置...</p>
+        </div>
+        <button class="primary-button" id="start-button" type="button" disabled>
+          开始识别
+        </button>
+        <div class="recent-block">
+          <div class="recent-title-row">
+            <h2>最近任务</h2>
+            <button class="text-button" id="refresh-history" type="button">刷新</button>
+          </div>
+          <div class="recent-list" id="recent-list"></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="database-panel hidden" id="database-view">
+      <div class="data-shell">
+        <div class="data-commandbar database-commandbar">
+          <div class="data-title">
+            <p class="eyebrow">产品数据库</p>
+            <h2>SKU 主数据</h2>
+          </div>
+          <div class="result-metrics">
+            <span id="db-total">0 条数据</span>
+            <span id="db-page-info">第 1 / 1 页</span>
+            <span id="db-source">SQLite / API</span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="secondary-button" id="db-refresh" type="button">刷新</button>
+          </div>
+        </div>
+        <div class="database-filters">
+          <label>
+            <span>关键词</span>
+            <input id="db-search" type="search" placeholder="SKU / 物料代码 / 品名 / 规格" />
+          </label>
+          <label>
+            <span>材质</span>
+            <select id="db-material-filter"><option value="">全部</option></select>
+          </label>
+          <label>
+            <span>硬度</span>
+            <select id="db-hardness-filter"><option value="">全部</option></select>
+          </label>
+          <label>
+            <span>颜色</span>
+            <select id="db-color-filter"><option value="">全部</option></select>
+          </label>
+          <label>
+            <span>价格</span>
+            <select id="db-price-filter">
+              <option value="">全部</option>
+              <option value="yes">已有价格</option>
+              <option value="no">无价格</option>
+            </select>
+          </label>
+          <label>
+            <span>排序</span>
+            <select id="db-sort">
+              <option value="updated_at:desc">最近更新</option>
+              <option value="sku:asc">SKU A-Z</option>
+              <option value="lowest_price:asc">最低价升序</option>
+              <option value="lowest_price:desc">最低价降序</option>
+            </select>
+          </label>
+          <button class="dark-button" id="db-apply-filter" type="button">查询</button>
+        </div>
+        <div class="database-layout">
+          <div class="database-table-card">
+            <div id="product-table" class="product-table"></div>
+            <div id="product-table-fallback" class="product-table-fallback hidden"></div>
+            <div class="database-pagination">
+              <button class="secondary-button" id="db-prev" type="button">上一页</button>
+              <button class="secondary-button" id="db-next" type="button">下一页</button>
+              <select id="db-page-size">
+                <option value="20">20 / 页</option>
+                <option value="50">50 / 页</option>
+                <option value="100">100 / 页</option>
+              </select>
+            </div>
+          </div>
+          <aside class="product-detail-panel" id="product-detail">
+            <div class="empty-state">选择一条 SKU 后查看详情和最近操作日志。</div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="process-panel hidden" id="process-view" aria-live="polite">
+      <div class="process-card">
+        <div class="process-header">
+          <div>
+            <p class="eyebrow">处理中</p>
+            <h2 id="process-title">正在识别文件</h2>
+          </div>
+          <span id="process-percent">0%</span>
+        </div>
+        <div class="progress-track"><div id="progress-bar"></div></div>
+        <p id="process-message">上传任务已创建，等待后台处理。</p>
+      </div>
+    </section>
+
+    <section class="queue-panel hidden" id="queue-section" aria-live="polite">
+      <div class="data-shell">
+        <div class="data-commandbar queue-commandbar">
+          <div class="data-title">
+            <p class="eyebrow">上传队列</p>
+            <h2>后台处理状态</h2>
+          </div>
+          <div class="result-metrics">
+            <span id="queue-total">0 个文件</span>
+            <span id="queue-done">0 个完成</span>
+            <span id="queue-active">0 个处理中</span>
+          </div>
+          <div class="toolbar-actions">
+            <span class="format-badge" id="queue-limit">并发上限 2</span>
+          </div>
+        </div>
+        <div class="queue-table-wrap">
+          <table class="field-table queue-table">
+            <thead>
+              <tr>
+                <th>文件</th>
+                <th>状态</th>
+                <th>进度</th>
+                <th>SKU</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="queue-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="result-panel hidden" id="result-view">
+      <div class="data-shell line-items-section" id="line-items-section">
+        <div class="data-commandbar">
+          <div class="data-title">
+            <p class="eyebrow">识别结果</p>
+            <h2>SKU 价格明细</h2>
+          </div>
+          <div class="result-metrics" id="result-metrics">
+            <span id="line-items-count">0 个 SKU</span>
+            <span id="price-row-count">0 条价格</span>
+            <span id="commit-count">0 条已录入</span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="secondary-button" id="new-task-button" type="button">新任务</button>
+            <button class="secondary-button" id="confirm-button" type="button">人工确认</button>
+            <button class="primary-button" id="regenerate-button" type="button">重新校验并导出</button>
+            <button class="dark-button" id="download-button" type="button">下载 Excel</button>
+            <button class="dark-button" id="download-word-button" type="button">下载 Word</button>
+          </div>
+        </div>
+        <div class="result-context" id="result-context"></div>
+        <div class="table-wrap data-table-wrap">
+          <table class="field-table data-table line-items-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>行号</th>
+                <th>SKU / 规格</th>
+                <th>客户物料 / 品名</th>
+                <th>属性</th>
+                <th>最低价</th>
+                <th>交货日期</th>
+                <th>状态</th>
+                <th>录入</th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/auth.js?v=4"></script>
+  <script src="/static/i18n.js?v=9"></script>
+  <script src="/static/vendor/tabulator.min.js"></script>
+  <script src="/static/customer-app.js?v=8"></script>
+<script>
+ document.getElementById('load-demo-pdf').addEventListener('click', async function(){
+   this.disabled=true; const status=document.getElementById('demo-load-status');status.textContent='正在载入样例…';
+   try {const response=await fetch('/showcase/sample');if(!response.ok)throw new Error('样例读取失败');
+     const blob=await response.blob();const transfer=new DataTransfer();transfer.items.add(new File([blob],'单据演示样例.pdf',{type:'application/pdf'}));
+     const input=document.getElementById('file-input');input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+     status.textContent='样例已就绪。点击“开始识别”，随后可校对字段并下载结果。';
+   } catch(e){status.textContent=e.message+'，请到体验中心的“演示样例”下载 PDF 后手动上传。'}finally{this.disabled=false}
+ });
+ </script></body>
+</html>

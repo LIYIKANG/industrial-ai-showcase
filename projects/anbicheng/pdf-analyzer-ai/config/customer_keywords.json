@@ -1,0 +1,114 @@
+{
+  "id": "default_product_keywords",
+  "type": "customer_keywords",
+  "label": "默认产品价格关键词",
+  "description": "提取产品编号、规格、数量和价格；识别后可人工校对并导出。",
+  "input_format": {
+    "comma_min_fields": 5,
+    "comma_max_fields": 6
+  },
+  "line_items": {
+    "enabled": true,
+    "label": "SKU 价格明细",
+    "extractor": "vlm",
+    "source_hint": "文件中所有出现 SKU/产品编号/Part NO/Item No. 与价格的表格；包括采购订单明细表、报价表、产品价格阶梯表。每个 SKU 需要输出对应的一个或多个含税单价，价格多时保留多个价格/MOQ 阶梯。",
+    "business_key": "sku",
+    "price_field": "prices.tax_included_price",
+    "quantity_field": "quantity",
+    "hide_price_rows_when_other_prices_exist": ["采购订单含税单价", "采购订单单价", "采购订单明细"],
+    "columns": [
+      {"id": "line_no", "label": "行号", "parser_type": "number"},
+      {"id": "sku", "label": "SKU", "parser_type": "sku"},
+      {"id": "product_code", "label": "产品编号", "parser_type": "sku"},
+      {"id": "item_no", "label": "客户物料代码", "parser_type": "sku"},
+      {"id": "product_name", "label": "品名", "parser_type": "text"},
+      {"id": "part_no", "label": "规格型号", "parser_type": "sku"},
+      {"id": "material_special", "label": "材质及特殊特性", "parser_type": "text"},
+      {"id": "hardness", "label": "硬度", "parser_type": "text"},
+      {"id": "color", "label": "颜色", "parser_type": "text"},
+      {"id": "prices", "label": "价格列表", "parser_type": "price_list"},
+      {"id": "lead_time", "label": "交货日期", "parser_type": "text"}
+    ]
+  },
+  "fields": [
+    {
+      "id": "internal_sku",
+      "label": "内部SKU",
+      "aliases": ["internal_sku", "SKU", "sku", "内部SKU", "内部sku"],
+      "required": true,
+      "input_position": 0,
+      "parser_type": "sku",
+      "source_hint": "产品编号、内部 SKU、Part NO.、客户指定主键等位置",
+      "not_allowed": ["产品名称", "材质", "颜色"],
+      "format": "保留原文编号，不翻译，不添加空格",
+      "examples": ["LX0145-002-0535-21", "535-21"],
+      "output_cell": "A2",
+      "business_key": true
+    },
+    {
+      "id": "material_special",
+      "label": "材质及特殊特性",
+      "aliases": ["材质及特殊特性", "材质", "材料", "material", "material_special"],
+      "required": true,
+      "input_position": 1,
+      "parser_type": "text",
+      "source_hint": "产品材质、特殊特性、材料说明",
+      "not_allowed": ["SKU", "含税单价", "MOQ"],
+      "format": "短文本，保留原文材质写法",
+      "examples": ["NBR", "FKM", "SILICONE"],
+      "output_cell": "B2"
+    },
+    {
+      "id": "hardness",
+      "label": "硬度",
+      "aliases": ["硬度", "hardness", "硬度范围"],
+      "required": true,
+      "input_position": 2,
+      "parser_type": "text",
+      "source_hint": "硬度、硬度范围、邵氏硬度等字段",
+      "not_allowed": ["颜色", "价格"],
+      "format": "保留单位和公差，例如 60±5°A",
+      "examples": ["50-55°A", "60±5°A"],
+      "output_cell": "C2"
+    },
+    {
+      "id": "color",
+      "label": "颜色",
+      "aliases": ["颜色", "色", "color", "colour"],
+      "required": true,
+      "input_position": 3,
+      "parser_type": "text",
+      "source_hint": "颜色、色号、外观颜色",
+      "not_allowed": ["材质", "硬度"],
+      "format": "短文本，保留中文或原文颜色",
+      "examples": ["黑色", "白色", "透明"],
+      "output_cell": "D2"
+    },
+    {
+      "id": "tax_included_price",
+      "label": "含税单价",
+      "aliases": ["含税单价", "含税价", "含税价格", "tax_included_price", "price"],
+      "required": true,
+      "input_position": 4,
+      "parser_type": "price",
+      "source_hint": "含税价、含税单价、税后单价、总价表中的单价字段",
+      "not_allowed": ["不含税价", "税额", "合计金额"],
+      "format": "数字，可带 ¥/￥/逗号，标准化为非负小数",
+      "examples": ["1.79", "¥2.28", "0.456"],
+      "output_cell": "E2"
+    },
+    {
+      "id": "moq",
+      "label": "MOQ",
+      "aliases": ["MOQ", "moq", "最小定量", "最小订量", "最小起订量"],
+      "required": false,
+      "input_position": 5,
+      "parser_type": "moq",
+      "source_hint": "MOQ、最小定量、最小订量、起订量",
+      "not_allowed": ["价格", "单价"],
+      "format": "整数数量，支持 1K、10K、500PCS，标准化为整数",
+      "examples": ["1000", "1K", "500PCS"],
+      "output_cell": "F2"
+    }
+  ]
+}
