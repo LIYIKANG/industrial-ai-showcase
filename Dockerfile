@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements-lock.txt ./requirements-lock.txt
-RUN pip install --no-cache-dir -r requirements-lock.txt && pip check
+RUN pip install --no-cache-dir --timeout 120 --retries 5 -r requirements-lock.txt && pip check
 
 COPY --chown=showcase:showcase . /app
 RUN python docker/prepare_image.py \
